@@ -1,10 +1,9 @@
 #ifndef _STACK_FUNC_H_
 #define _STACK_FUNC_H_
 
-#include "color_lib.h"
-#include "stack_lib.h"
-
 #include "defender_system.h"
+#include "stack.h"
+
 
 #ifdef DEBUG
 #define INIT(name) .stack_info = {__FILE__, __LINE__, __PRETTY_FUNCTION__, #name}

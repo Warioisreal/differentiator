@@ -3,25 +3,28 @@
 
 #include <stdlib.h>
 
-typedef const char* tree_elem_t;
-
-const tree_elem_t DATA_POISON = nullptr;
+#include "../differentiator.h"
 
 const size_t MAX_ANSWER_SIZE = 1000;
-
 const size_t MAX_BUFFER_DB_SIZE = 10000;
-
 const size_t MAX_DUMP_MESSAGE_SIZE = 200;
-
 const size_t HASH_SEED = 5381;
 
+
+union ValueData {
+    const char* operation;
+    const char* variable;
+    double number;
+};
+
+
 struct Node_t {
-    tree_elem_t value = DATA_POISON;
+    node_type type = node_type::DEFAULT;
+
+    union ValueData value;
+
     Node_t* left  = nullptr;
     Node_t* right = nullptr;
-
-    bool allocated_node = false;
-    bool correct_childs = false;
 
     size_t color    = 0;
     size_t bg_color = 0;
@@ -40,15 +43,14 @@ typedef enum class TreeReturn : char {
     INVALID_BUFFER = 7,
     WRITE_BUF_ERR  = 8,
     INVALID_ROOT   = 9,
-    EMPTY_TREE_DEL = 10,
-    INVALID_SIZE   = 11,
-    INVALID_VALUE  = 12,
-    INVALID_HASH   = 13,
-    INVALID_CHILDS = 14,
-    INVALID_DB_PTR = 15
+    INVALID_SIZE   = 10,
+    INVALID_VALUE  = 11,
+    INVALID_HASH   = 12,
+    INVALID_CHILDS = 13,
+    INVALID_DB_PTR = 14
 } tree_return_t;
 
-static const char* TreeErrorsArray[16] = {
+static const char* TreeErrorsArray[] = {
     "TREE_OK",
     "ADD_ELEMENT",
     "DELETE_SUBTREE",

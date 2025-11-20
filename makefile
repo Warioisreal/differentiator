@@ -10,37 +10,36 @@ CFLAGS = -g -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Wc++14-compa
          #-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 LDFLAGS =
-OBJDIR = objects
+OBJDIR = 0_objects
 CC = g++
-SOURCES = main.cpp
+SOURCES = main.cpp differentiator.cpp
 OBJECTS = $(addprefix $(OBJDIR)/, $(SOURCES:.cpp=.o))
 EXECUTABLE = binary_file
 
 TREE_SRC_DIR = tree
-TREE_OBJDIR = tree_obj
-TREE_SOURCES = tree_func.cpp logger.cpp dot.cpp tree_verify.cpp
+TREE_OBJDIR = 0_tree_obj
+TREE_SOURCES = tree_func.cpp tree_DB_func.cpp tree_node_func.cpp logger.cpp dot.cpp checkers.cpp
 TREE_OBJECTS = $(addprefix $(TREE_OBJDIR)/, $(TREE_SOURCES:.cpp=.o))
 TREE_LIB = tree_lib.a
 
 STACK_SRC_DIR = tree/stack
-STACK_OBJDIR = stack_obj
+STACK_OBJDIR = 0_stack_obj
 STACK_SOURCES = stack_func.cpp defender_system.cpp stack_attack.cpp
 STACK_OBJECTS = $(addprefix $(STACK_OBJDIR)/, $(STACK_SOURCES:.cpp=.o))
 STACK_LIB = stack_lib.a
 
-all: $(EXECUTABLE)
+all: tree $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS) tree
-	$(CC) $(LDFLAGS) $(OBJECTS) $(TREE_LIB) -o $@
+tree: stack $(TREE_LIB)
 
-tree: $(TREE_LIB)
-
-$(TREE_LIB): $(TREE_OBJECTS) stack
+$(TREE_LIB): $(TREE_OBJECTS)
 	@ar rcs $@ $(TREE_OBJECTS)
 
 $(TREE_OBJDIR)/%.o: $(TREE_SRC_DIR)/%.cpp
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+
 
 stack: $(STACK_LIB)
 
@@ -51,9 +50,14 @@ $(STACK_OBJDIR)/%.o: $(STACK_SRC_DIR)/%.cpp
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
+
+
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) $(TREE_LIB) -o $@
 
 clean: cleantree
 	rm -rf $(OBJDIR) $(EXECUTABLE)

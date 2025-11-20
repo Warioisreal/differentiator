@@ -1,0 +1,14 @@
+digraph G{
+node[shape=Mrecord, style=filled];
+rankdir=TB;
+ordering=out;
+node7E0800000 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 7E0800000 | value = * | {<left> Да | <right> Нет}}"];
+node7E0800000: <left> -> node7E0800040 [color="#ff0000"];
+node7E0800040 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 7E0800040 | value = x | {<left> 0 | <right> 0}}"];
+node7E0800000: <right> -> node7E0800080 [color="#0000ff"];
+node7E0800080 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 7E0800080 | value = + | {<left> Да | <right> Нет}}"];
+node7E0800080: <left> -> node7E08000C0 [color="#ff0000"];
+node7E08000C0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 7E08000C0 | value = y | {<left> 0 | <right> 0}}"];
+node7E0800080: <right> -> node7E0800100 [color="#0000ff"];
+node7E0800100 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 7E0800100 | value = 6 | {<left> 0 | <right> 0}}"];
+}

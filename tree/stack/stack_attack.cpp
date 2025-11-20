@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "stack_attack.h"
 
 #ifdef DEBUG

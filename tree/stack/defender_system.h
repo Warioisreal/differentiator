@@ -2,7 +2,8 @@
 #define _DEFENDER_SYSTEM_H_
 
 #include "define_lib.h"
-#include "stack_lib.h"
+
+#include "stack.h"
 
 #ifdef DEBUG
 const size_t HASH_SEED = 5381;

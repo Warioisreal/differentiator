@@ -1,7 +1,7 @@
 #ifndef _STACK_ATTACK_H_
 #define _STACK_ATTACK_H_
 
-#include "stack_lib.h"
+#include "stack.h"
 #include "stack_func.h"
 
 #ifdef DEBUG

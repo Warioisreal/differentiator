@@ -1,8 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "dot.h"
 #include "logger.h"
+
 
 static void GoLogRec(Node_t* node, FILE* file_dot);
 
@@ -112,16 +109,44 @@ static void GoLogRec(Node_t* node, FILE* file_dot) {
     } else {
         snprintf(right, 10, "0");
     }
-    snprintf(
+
+    if (node->type == node_type::OPERATION || node->type == node_type::DEFAULT) {
+        snprintf(
         params,
         DOT_PARAMS_SIZE,
         "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %s | <right> %s}}\"",
         node->color,
         node->bg_color,
         (size_t)node,
-        node->value,
+        node->value.operation,
         left,
         right);
+    } else
+    if (node->type == node_type::VARIABLE){
+        snprintf(
+        params,
+        DOT_PARAMS_SIZE,
+        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %s | <right> %s}}\"",
+        node->color,
+        node->bg_color,
+        (size_t)node,
+        node->value.variable,
+        left,
+        right);
+    } else
+    if (node->type == node_type::NUMBER) {
+        snprintf(
+        params,
+        DOT_PARAMS_SIZE,
+        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %lg | {<left> %s | <right> %s}}\"",
+        node->color,
+        node->bg_color,
+        (size_t)node,
+        node->value.number,
+        left,
+        right);
+    }
+
 
     MakeDotElement(file_dot, (size_t)node, params);
     if (node->left != nullptr) {
@@ -132,34 +157,4 @@ static void GoLogRec(Node_t* node, FILE* file_dot) {
         MakeDotElementConnection(file_dot, (size_t)node, (size_t)node->right, ": <right>", "", "color=\"#0000ff\"");
         GoLogRec(node->right, file_dot);
     }
-}
-
-//----------------------------------------------------------------------------------
-
-void MakeGreenElem(Node_t* node) {
-    node->color    = 0x00c000;
-    node->bg_color = 0xa0f0a0;
-}
-
-//----------------------------------------------------------------------------------
-
-void MakeYellowElem(Node_t* node) {
-    node->color    = 0xc0c000;
-    node->bg_color = 0xf0f0a0;
-}
-
-//----------------------------------------------------------------------------------
-
-void MakeRedElem(Node_t* node) {
-    if (node == nullptr) {printf("NULL\n"); return; }
-    node->color    = 0xc00000;
-    node->bg_color = 0xf0a0a0;
-}
-
-//----------------------------------------------------------------------------------
-
-void MakeGreyElem(Node_t* node) {
-    if (node == nullptr) {printf("NULL\n"); return; }
-    node->color    = 0x808080;
-    node->bg_color = 0xc0c0c0;
 }

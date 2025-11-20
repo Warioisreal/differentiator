@@ -3,10 +3,12 @@
 
 #include "define_lib.h"
 #include "color_lib.h"
-#include "stack_lib.h"
 
 #include "defender_system.h"
+#include "stack.h"
+
 #include "stack_func.h"
+
 
 static stack_error_t StackEditCapacity(stack_type* stack, size_t capacity);
 static inline void StackFillPoison(stack_type* stack);

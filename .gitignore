@@ -1,7 +1,4 @@
-*.out
 binary_file
-binary_file_debug
-*.txt
 *.o
 *.a
 *.htm

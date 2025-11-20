@@ -22,10 +22,10 @@ bool IsVariable(size_t hash) {
 
 //----------------------------------------------------------------------------------
 
-bool IsOperation(size_t hash) {
+operation_type GetTypeOperation(size_t hash) {
     for (size_t pos = 0; pos < OPR_TABLE_SIZE; pos++) {
-        if (OprTable[pos].hash == hash) { return true; }
+        if (OprTable[pos].hash == hash) { return OprTable[pos].type; }
     }
 
-    return false;
+    return operation_type::DEFAULT;
 }

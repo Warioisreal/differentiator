@@ -1,6 +1,7 @@
 #ifndef _TREE_NODE_FUNC_H_
 #define _TREE_NODE_FUNC_H_
 
+
 #include "tree.h"
 
 

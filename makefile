@@ -12,7 +12,7 @@ CFLAGS = -g -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Wc++14-compa
 LDFLAGS =
 OBJDIR = 0_objects
 CC = g++
-SOURCES = main.cpp differentiator.cpp
+SOURCES = main.cpp differentiator.cpp math_func.cpp
 OBJECTS = $(addprefix $(OBJDIR)/, $(SOURCES:.cpp=.o))
 EXECUTABLE = binary_file
 

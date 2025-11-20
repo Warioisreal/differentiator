@@ -2,13 +2,15 @@ digraph G{
 node[shape=Mrecord, style=filled];
 rankdir=TB;
 ordering=out;
-node7E0800000 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 7E0800000 | value = * | {<left> Да | <right> Нет}}"];
-node7E0800000: <left> -> node7E0800040 [color="#ff0000"];
-node7E0800040 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 7E0800040 | value = x | {<left> 0 | <right> 0}}"];
-node7E0800000: <right> -> node7E0800080 [color="#0000ff"];
-node7E0800080 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 7E0800080 | value = + | {<left> Да | <right> Нет}}"];
-node7E0800080: <left> -> node7E08000C0 [color="#ff0000"];
-node7E08000C0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 7E08000C0 | value = y | {<left> 0 | <right> 0}}"];
-node7E0800080: <right> -> node7E0800100 [color="#0000ff"];
-node7E0800100 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 7E0800100 | value = 6 | {<left> 0 | <right> 0}}"];
+node101469AB0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 101469AB0 | value = * | {<left> 101469AF0 | <right> 101469B30}}"];
+node101469AB0: <left> -> node101469AF0 [color="#ff0000"];
+node101469AF0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 101469AF0 | value = x | {<left> 0 | <right> 0}}"];
+node101469AB0: <right> -> node101469B30 [color="#0000ff"];
+node101469B30 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 101469B30 | value = + | {<left> 101469B70 | <right> 10146B340}}"];
+node101469B30: <left> -> node101469B70 [color="#ff0000"];
+node101469B70 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 101469B70 | value = cos | {<left> 10146B300 | <right> 0}}"];
+node101469B70: <left> -> node10146B300 [color="#ff0000"];
+node10146B300 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 10146B300 | value = y | {<left> 0 | <right> 0}}"];
+node101469B30: <right> -> node10146B340 [color="#0000ff"];
+node10146B340 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 10146B340 | value = 6 | {<left> 0 | <right> 0}}"];
 }

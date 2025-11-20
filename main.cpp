@@ -11,6 +11,11 @@ int main(void) {
 
     TreeReadDB("input.txt", &diff);
 
+    DiffSolveEquation(&diff);
+
+    DiffDifferentiateEquation(&diff);
+
     TreeDtor(&diff);
+
     return 0;
 }

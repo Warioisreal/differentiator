@@ -1,7 +1,7 @@
+#include "color_lib.h"
+#include "stack/stack_lib.h"
+
 #include "tree_func.h"
-
-
-static void TreeVisitPostOrder(Node_t* node, size_t* count);
 
 
 tree_return_t TreeCtor(Tree_type* tree) {
@@ -15,7 +15,7 @@ tree_return_t TreeCtor(Tree_type* tree) {
     tree->log->dump_count = 1;
 
     union ValueData value;
-    value.operation = "CTOR";
+    value.operation = operation_type::DEFAULT;
     tree->root = MakeTreeElement(node_type::DEFAULT, value);
     tree->size = 1;
 
@@ -200,7 +200,7 @@ tree_return_t TreeVerify(Tree_type* tree) {
 
     size_t count = 0;
 
-    TreeVisitPostOrder(tree->root, &count);
+    TreeCountNodes(tree->root, &count);
     if (count != tree->size) {
         return tree_return_t::INVALID_SIZE;
     }
@@ -230,12 +230,12 @@ tree_return_t SubTreeVerify(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-static void TreeVisitPostOrder(Node_t* node, size_t* count) {
+void TreeCountNodes(Node_t* node, size_t* count) {
     if (node->left != nullptr) {
-        TreeVisitPostOrder(node->left, count);
+        TreeCountNodes(node->left, count);
     }
     if (node->right != nullptr) {
-        TreeVisitPostOrder(node->right, count);
+        TreeCountNodes(node->right, count);
     }
     (*count)++;
 }

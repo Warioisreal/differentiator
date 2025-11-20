@@ -1,12 +1,14 @@
 #ifndef _DIFFERENTIATOR_H_
 #define _DIFFERENTIATOR_H_
 
-
+#include <stdio.h>
 #include <stdlib.h>
 
 
+struct Tree_type;
+
 const size_t VAR_TABLE_SIZE = 2;
-const size_t OPR_TABLE_SIZE = 22;
+const size_t OPR_TABLE_SIZE = 23;
 
 const size_t VARIABLE_NAME_SIZE  = 10;
 const size_t OPERATION_NAME_SIZE = 10;
@@ -53,6 +55,7 @@ typedef enum class Operations : char {
 
 struct Variable {
     char name[VARIABLE_NAME_SIZE] = "";
+    double value = 0;
     size_t hash = 0;
 };
 
@@ -67,5 +70,8 @@ extern struct Operation OprTable[OPR_TABLE_SIZE];
 
 size_t CalculateStringHash(const char* src);
 void CalculateTables(void);
+
+double DiffSolveEquation(Tree_type* tree);
+void DiffDifferentiateEquation(Tree_type* tree);
 
 #endif //_DIFFERENTIATOR_H_

@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "tree_node_func.h"
 
 

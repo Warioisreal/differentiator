@@ -97,54 +97,59 @@ void GoLog(Node_t* root, size_t size, Node_t* node, const char* message, LOG* lo
 
 static void GoLogRec(Node_t* node, FILE* file_dot) {
     char params[DOT_PARAMS_SIZE] = "";
-    char left[10] = "";
-    char right[10] = "";
-    if (node->left != nullptr) {
-        snprintf(left, 10, "Да");
-    } else {
-        snprintf(left, 10, "0");
-    }
-    if (node->right != nullptr) {
-        snprintf(right, 10, "Нет");
-    } else {
-        snprintf(right, 10, "0");
-    }
+    // char left[10] = "";
+    // char right[10] = "";
+    // if (node->left != nullptr) {
+    //     snprintf(left, 10, "Да");
+    // } else {
+    //     snprintf(left, 10, "0");
+    // }
+    // if (node->right != nullptr) {
+    //     snprintf(right, 10, "Нет");
+    // } else {
+    //     snprintf(right, 10, "0");
+    // }
 
     if (node->type == node_type::OPERATION || node->type == node_type::DEFAULT) {
-        snprintf(
-        params,
-        DOT_PARAMS_SIZE,
-        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %s | <right> %s}}\"",
-        node->color,
-        node->bg_color,
-        (size_t)node,
-        node->value.operation,
-        left,
-        right);
+        for (size_t pos = 0; pos < OPR_TABLE_SIZE; pos++) {
+            if (OprTable[pos].type == node->value.operation) {
+                snprintf(
+                    params,
+                    DOT_PARAMS_SIZE,
+                    "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %zX | <right> %zX}}\"",
+                    node->color,
+                    node->bg_color,
+                    (size_t)node,
+                    OprTable[pos].name,
+                    (size_t)node->left,
+                    (size_t)node->right);
+                break;
+            }
+        }
     } else
     if (node->type == node_type::VARIABLE){
         snprintf(
         params,
         DOT_PARAMS_SIZE,
-        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %s | <right> %s}}\"",
+        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %s | {<left> %zX | <right> %zX}}\"",
         node->color,
         node->bg_color,
         (size_t)node,
         node->value.variable,
-        left,
-        right);
+        (size_t)node->left,
+        (size_t)node->right);
     } else
     if (node->type == node_type::NUMBER) {
         snprintf(
         params,
         DOT_PARAMS_SIZE,
-        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %lg | {<left> %s | <right> %s}}\"",
+        "color=\"#%06zX\", fillcolor=\"#%06zX\", penwidth=\"2\", label=\"{addr = %zX | value = %lg | {<left> %zX | <right> %zX}}\"",
         node->color,
         node->bg_color,
         (size_t)node,
         node->value.number,
-        left,
-        right);
+        (size_t)node->left,
+        (size_t)node->right);
     }
 
 

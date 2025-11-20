@@ -1,3 +1,5 @@
+#include "checkers.h"
+
 #include "tree_DB_func.h"
 
 
@@ -145,10 +147,12 @@ static Node_t* TreeReadDBRec(Tree_type* tree, char* buffer, int* position) {
             if (IsVariable(read_value_hash) == true) {
                 value.variable = read_value;
                 node = MakeTreeElement(node_type::VARIABLE, value);
-            } else
-            if (IsOperation(read_value_hash) == true) {
-                value.operation = read_value;
-                node = MakeTreeElement(node_type::OPERATION, value);
+            } else {
+                operation_type opr = GetTypeOperation(read_value_hash);
+                if (opr != operation_type::DEFAULT) {
+                    value.operation = opr;
+                    node = MakeTreeElement(node_type::OPERATION, value);
+                }
             }
         }
         tree->size++;

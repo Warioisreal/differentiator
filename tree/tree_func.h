@@ -2,15 +2,9 @@
 #define _TREE_FUNC_H_
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "define_lib.h"
-#include "color_lib.h"
-#include "stack/stack_lib.h"
-#include "logger.h"
 
+#include "logger.h"
 
 #include "tree_node_func.h"
 
@@ -61,5 +55,6 @@ void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return
 
 tree_return_t TreeVerify(Tree_type* tree, bool check_size);
 tree_return_t SubTreeVerify(Node_t* node);
+void TreeCountNodes(Node_t* node, size_t* count);
 
 #endif //_TREE_FUNC_H_

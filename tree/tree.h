@@ -1,9 +1,11 @@
 #ifndef _TREE_H_
 #define _TREE_H_
 
+
 #include <stdlib.h>
 
 #include "../differentiator.h"
+
 
 const size_t MAX_ANSWER_SIZE = 1000;
 const size_t MAX_BUFFER_DB_SIZE = 10000;
@@ -12,7 +14,7 @@ const size_t HASH_SEED = 5381;
 
 
 union ValueData {
-    const char* operation;
+    operation_type operation;
     const char* variable;
     double number;
 };

@@ -1,0 +1,14 @@
+digraph G{
+node[shape=Mrecord, style=filled];
+rankdir=TB;
+ordering=out;
+node100A99AF0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100A99AF0 | value = log | {<left> 100A99B60 | <right> 100A99BA0}}"];
+node100A99AF0: <left> -> node100A99B60 [color="#ff0000"];
+node100A99B60 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100A99B60 | value = 3 | {<left> 0 | <right> 0}}"];
+node100A99AF0: <right> -> node100A99BA0 [color="#0000ff"];
+node100A99BA0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100A99BA0 | value = + | {<left> 100A9B340 | <right> 100A9B380}}"];
+node100A99BA0: <left> -> node100A9B340 [color="#ff0000"];
+node100A9B340 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100A9B340 | value = x | {<left> 0 | <right> 0}}"];
+node100A99BA0: <right> -> node100A9B380 [color="#0000ff"];
+node100A9B380 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100A9B380 | value = 1 | {<left> 0 | <right> 0}}"];
+}

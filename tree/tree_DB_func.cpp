@@ -108,12 +108,12 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree) {
     fclose(file);
 
     int position = 0;
-    tree->size = 0;
 
     TreeDtorRec(&(tree->root), &(tree->size));
 
-    Node_t* node = TreeReadDBRec(tree, buffer, &position);
+    tree->size = 0;
 
+    Node_t* node = TreeReadDBRec(tree, buffer, &position);
     if (node == nullptr) {
         TreeDump(tree, "DB READ CREATE ROOT ERROR", tree_return_t::INVALID_ROOT);
         return tree_return_t::INVALID_ROOT;

@@ -12,7 +12,7 @@ CFLAGS = -g -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Wc++14-compa
 LDFLAGS =
 OBJDIR = 0_objects
 CC = g++
-SOURCES = main.cpp differentiator.cpp math_func.cpp
+SOURCES = main.cpp differentiator.cpp math_func.cpp optimazer.cpp
 OBJECTS = $(addprefix $(OBJDIR)/, $(SOURCES:.cpp=.o))
 EXECUTABLE = binary_file
 
@@ -24,7 +24,7 @@ TREE_LIB = tree_lib.a
 
 STACK_SRC_DIR = tree/stack
 STACK_OBJDIR = 0_stack_obj
-STACK_SOURCES = stack_func.cpp defender_system.cpp stack_attack.cpp
+STACK_SOURCES = stack_func.cpp defender_system.cpp
 STACK_OBJECTS = $(addprefix $(STACK_OBJDIR)/, $(STACK_SOURCES:.cpp=.o))
 STACK_LIB = stack_lib.a
 

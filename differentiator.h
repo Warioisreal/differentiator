@@ -6,6 +6,8 @@
 
 
 struct Tree_type;
+struct Node_t;
+
 
 const size_t VAR_TABLE_SIZE = 2;
 const size_t OPR_TABLE_SIZE = 23;
@@ -49,9 +51,14 @@ typedef enum class Operations : char {
     ARCTH  = 19,
     ARCCTH = 20,
 
-    LN =  21,
-    EXP = 22
+    LOG = 21,
+    DEG = 22
 } operation_type;
+
+typedef enum class DfrReturn : char {
+    OK = 0,
+    ERROR = 1
+} dfr_return_t;
 
 struct Variable {
     char name[VARIABLE_NAME_SIZE] = "";
@@ -68,10 +75,25 @@ struct Operation {
 extern struct Variable VarTable[VAR_TABLE_SIZE];
 extern struct Operation OprTable[OPR_TABLE_SIZE];
 
+struct ExtraTrees {
+    size_t size      = 0;
+    size_t capacity  = 0;
+    Tree_type** array = nullptr;
+};
+
+#define MAKE_DFR(dfr_name, calc_arr_name, arr_size) \
+    CalculateTables(); \
+    MAKE_TREE(dfr_name); \
+    ExtraTrees calc_arr_name = {}; \
+    CreateSubTreesArray(&calc_arr_name, arr_size);
+
 size_t CalculateStringHash(const char* src);
 void CalculateTables(void);
 
 double DiffSolveEquation(Tree_type* tree);
-void DiffDifferentiateEquation(Tree_type* tree);
+double SolveRec(Node_t* node);
+void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree);
+
+dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
 
 #endif //_DIFFERENTIATOR_H_

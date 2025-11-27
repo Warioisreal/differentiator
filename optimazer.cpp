@@ -1,0 +1,130 @@
+#include "tree/tree_func.h"
+
+#include "optimazer.h"
+
+
+void OptimizeTree(Tree_type* tree) {
+    bool is_update = true;
+    while (is_update == true) {
+        is_update = false;
+        OptimizeConstantElements(tree, &tree->root, &is_update);
+        DeleteNeutralElements(tree, &tree->root, &is_update);
+    }
+
+    TreePrint(tree, "Optimize tree");
+}
+
+
+#define T_ (*node)->type
+#define V_ (*node)->value
+#define OP_ (*node)->value.operation
+#define L_ (*node)->left
+#define R_ (*node)->right
+#define LT_ (*node)->left->type
+#define RT_ (*node)->right->type
+#define LV_ (*node)->left->value
+#define RV_ (*node)->right->value
+#define LN_ (*node)->left->value.number
+#define RN_ (*node)->right->value.number
+
+#define MAKE_NUMBER_NODE \
+    TreeDtorRec(node, &(tree->size)); \
+    *node = MakeTreeElement(node_type::NUMBER, value); \
+    tree->size++; \
+    *is_update = true;
+
+#define COPY_NODE \
+    TreeDtorRec(node, &(tree->size)); \
+    *node = new_node; \
+    tree->size++; \
+    *is_update = true;
+
+void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
+    if (*node == nullptr) { return; }
+
+    if (T_ == node_type::OPERATION) {
+        OptimizeConstantElements(tree, &(L_), is_update);
+        OptimizeConstantElements(tree, &(R_), is_update);
+
+        if (LT_ == node_type::NUMBER && RT_ == node_type::NUMBER) {
+            union ValueData value;
+            value.number = SolveRec(*node);
+            MAKE_NUMBER_NODE;
+        }
+    }
+}
+
+void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
+    if (*node == nullptr) { return; }
+
+    if (T_ == node_type::OPERATION) {
+        DeleteNeutralElements(tree, &(L_), is_update);
+        DeleteNeutralElements(tree, &(R_), is_update);
+
+        if (OP_ == operation_type::MUL) {
+            if ((LT_ == node_type::NUMBER && LN_ == 0) || (RT_ == node_type::NUMBER && RN_ == 0)) {
+                union ValueData value;
+                value.number = 0;
+                MAKE_NUMBER_NODE;
+            } else
+            if (LT_ == node_type::NUMBER && LN_ == 1) {
+                union ValueData value;
+                value.number = RN_;
+                MAKE_NUMBER_NODE;
+            } else
+            if (RT_ == node_type::NUMBER && RN_ == 1) {
+                union ValueData value;
+                value.number = LN_;
+                MAKE_NUMBER_NODE;
+            }
+        } else
+        if (OP_ == operation_type::ADD) {
+            if (LT_ == node_type::NUMBER && LN_ == 0) {
+                Node_t* new_node = MakeTreeElement(RT_, RV_);
+                COPY_NODE;
+            } else
+            if (RT_ == node_type::NUMBER && RN_ == 0) {
+                Node_t* new_node = MakeTreeElement(LT_, LV_);
+                COPY_NODE;
+            }
+        } else
+        if (OP_ == operation_type::SUB) {
+            if (RT_ == node_type::NUMBER && RN_ == 0) {
+                Node_t* new_node = MakeTreeElement(LT_, LV_);
+                COPY_NODE;
+            }
+        } else
+        if (OP_ == operation_type::DIV) {
+            if (LT_ == node_type::NUMBER && LN_ == 0) {
+                union ValueData value;
+                value.number = 0;
+                MAKE_NUMBER_NODE;
+            }
+        } else
+        if (OP_ == operation_type::DEG) {
+            if (RT_ == node_type::NUMBER && RN_ == 0) {
+                union ValueData value;
+                value.number = 1;
+                MAKE_NUMBER_NODE;
+            } else
+            if (RT_ == node_type::NUMBER && RN_ == 1) {
+                Node_t* new_node = MakeTreeElement(LT_, LV_);
+                COPY_NODE;
+            }
+        }
+    }
+}
+
+#undef T_
+#undef V_
+#undef OP_
+#undef L_
+#undef R_
+#undef LT_
+#undef RT_
+#undef LV_
+#undef RV_
+#undef LN_
+#undef RN_
+#undef MAKE_NUMBER_NODE
+#undef COPY_NODE

@@ -3,6 +3,7 @@
 #include "tree/tree_func.h"
 #include "math_func.h"
 
+#include "optimazer.h"
 #include "differentiator.h"
 
 
@@ -39,14 +40,13 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     {operation_type::ARCTH,  "arcth",  0},
     {operation_type::ARCCTH, "arccth", 0},
 
-    {operation_type::LN,  "ln",  0},
-    {operation_type::EXP, "exp", 0}
+    {operation_type::LOG, "log",  0},
+    {operation_type::DEG, "^", 0}
 };
 
 
 static size_t djb2(size_t hash, size_t field);
 static Node_t* DiffRec(Node_t* node, size_t target_hash);
-static double SolveRec(Node_t* node);
 static Node_t* NewNumberNode(double number);
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r);
 static Node_t* NewNode(node_type node_t, union ValueData value, Node_t* node_l, Node_t* node_r);
@@ -77,10 +77,33 @@ size_t CalculateStringHash(const char* src) {
     return hash;
 }
 
-//----------------------------------------------------------------------------------
-
 static size_t djb2(size_t hash, size_t field) {
     return ((hash << 5) + hash) + field;
+}
+
+//----------------------------------------------------------------------------------
+
+dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size) {
+    Tree_type** array = (Tree_type**)calloc(size, sizeof(Tree_type*));
+
+    if (array == nullptr) { return dfr_return_t::ERROR; }
+
+    calc_array->size     = 0;
+    calc_array->capacity = size;
+    calc_array->array    = array;
+
+    return dfr_return_t::OK;
+}
+
+dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array) {
+    Tree_type** array = (Tree_type**)realloc(calc_array, 2 * calc_array->capacity * sizeof(Tree_type*));
+
+    if (array == nullptr) { return dfr_return_t::ERROR; }
+
+    calc_array->capacity *= 2;
+    calc_array->array    = array;
+
+    return dfr_return_t::OK;
 }
 
 //----------------------------------------------------------------------------------
@@ -91,9 +114,79 @@ double DiffSolveEquation(Tree_type* tree) {
     return res;
 }
 
+double SolveRec(Node_t* node) {
+    if (node->type == node_type::OPERATION) {
+        switch (node->value.operation) {
+            case operation_type::ADD:
+                return Add(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::SUB:
+                return Sub(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::MUL:
+                return Mul(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::DIV:
+                return Div(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::SIN:
+                return Sin(SolveRec(node->left));
+            case operation_type::COS:
+                return Cos(SolveRec(node->left));
+            case operation_type::TAN:
+                return Tan(SolveRec(node->left));
+            case operation_type::CTAN:
+                return Ctan(SolveRec(node->left));
+            case operation_type::ARCSIN:
+                return Arcsin(SolveRec(node->left));
+            case operation_type::ARCCOS:
+                return Arccos(SolveRec(node->left));
+            case operation_type::ARCTAN:
+                return Arctan(SolveRec(node->left));
+            case operation_type::ARCCTAN:
+                return Arcctan(SolveRec(node->left));
+            case operation_type::SH:
+                return Sinh(SolveRec(node->left));
+            case operation_type::CH:
+                return Cosh(SolveRec(node->left));
+            case operation_type::TH:
+                return Tanh(SolveRec(node->left));
+            case operation_type::CTH:
+                return Ctanh(SolveRec(node->left));
+            case operation_type::ARCSH:
+                return Arcsinh(SolveRec(node->left));
+            case operation_type::ARCCH:
+                return Arccosh(SolveRec(node->left));
+            case operation_type::ARCTH:
+                return Arctanh(SolveRec(node->left));
+            case operation_type::ARCCTH:
+                return Arcctanh(SolveRec(node->left));
+            case operation_type::LOG:
+                return Log(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::DEG:
+                return Deg(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::DEFAULT:
+                return 0;
+            default:
+                printf("INVALID OPR\n");
+                return 0;
+        };
+    } else
+    if (node->type == node_type::VARIABLE) {
+        size_t hash = CalculateStringHash(node->value.variable);
+        for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
+            if (hash == VarTable[pos].hash) {
+                return VarTable[pos].value;
+            }
+        }
+        printf("invalid var\n");
+        return 0;
+    } else
+    if (node->type == node_type::NUMBER) {
+        return node->value.number;
+    }
+    return 0;
+}
+
 //----------------------------------------------------------------------------------
 
-void DiffDifferentiateEquation(Tree_type* tree) {
+void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree) {
     printf("По какой переменной дифференцировать?\n");
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
         printf("%s ", VarTable[pos].name);
@@ -104,31 +197,56 @@ void DiffDifferentiateEquation(Tree_type* tree) {
     size_t answ_hash = CalculateStringHash(var_name);
 
     MAKE_TREE(tree1);
-
-    TreeDtorRec(&(tree1.root), &(tree1.size));
-
     tree1.root = DiffRec(tree->root, answ_hash);
-
     TreeCountNodes(tree1.root, &(tree1.size));
+    TreePrint(&tree1, "PRINT");
 
-    TreeDtor(&tree1);
+
+    /*
+    for (size_t curent_degree = 0; curent_degree < degree; curent_degree++) {
+        MAKE_TREE(tree1);
+        TreeDtorRec(&(tree1.root), &(tree1.size));
+        if (curent_degree == 0) {
+            tree1.root = DiffRec(tree->root, answ_hash);
+        } else {
+            tree1.root = DiffRec(calc_array->array[calc_array->size]->root, answ_hash);
+        }
+        TreeCountNodes(tree1.root, &(tree1.size));
+        if (calc_array->size == calc_array->capacity) { ReallocSubTreesArray(calc_array); }
+        calc_array->array[calc_array->size++] = &tree1;
+    }*/
 }
 
 #define dL DiffRec(node->left,  target_hash)
 #define dR DiffRec(node->right, target_hash)
 #define cL CopyNode(node->left)
 #define cR CopyNode(node->right)
-
 #define aNn(num) NewNumberNode(num)
-
-#define ADD_(left, right) NewOperationNode(operation_type::ADD,  left, right)
-#define SUB_(left, right) NewOperationNode(operation_type::SUB,  left, right)
-#define MUL_(left, right) NewOperationNode(operation_type::MUL,  left, right)
-#define DIV_(left, right) NewOperationNode(operation_type::DIV,  left, right)
-#define SIN_(left)        NewOperationNode(operation_type::SIN,  left, nullptr)
-#define COS_(left)        NewOperationNode(operation_type::COS,  left, nullptr)
-#define TAN_(left)        NewOperationNode(operation_type::TAN,  left, nullptr)
-#define CTAN_(left)       NewOperationNode(operation_type::CTAN, left, nullptr)
+#define e_  NewNumberNode(GetE())
+#define pi_ NewNumberNode(GetPi())
+#define ADD_(left, right) NewOperationNode(operation_type::ADD, left, right)
+#define SUB_(left, right) NewOperationNode(operation_type::SUB, left, right)
+#define MUL_(left, right) NewOperationNode(operation_type::MUL, left, right)
+#define DIV_(left, right) NewOperationNode(operation_type::DIV, left, right)
+#define SN_(left)   NewOperationNode(operation_type::SIN,     left, nullptr)
+#define CS_(left)   NewOperationNode(operation_type::COS,     left, nullptr)
+#define TN_(left)   NewOperationNode(operation_type::TAN,     left, nullptr)
+#define CTN_(left)  NewOperationNode(operation_type::CTAN,    left, nullptr)
+#define ASN_(left)  NewOperationNode(operation_type::ARCSIN,  left, nullptr)
+#define ACS_(left)  NewOperationNode(operation_type::ARCCOS,  left, nullptr)
+#define ATN_(left)  NewOperationNode(operation_type::ARCTAN,  left, nullptr)
+#define ACTN_(left) NewOperationNode(operation_type::ARCCTAN, left, nullptr)
+#define SH_(left)   NewOperationNode(operation_type::SH,      left, nullptr)
+#define CH_(left)   NewOperationNode(operation_type::CH,      left, nullptr)
+#define TH_(left)   NewOperationNode(operation_type::TH,      left, nullptr)
+#define CTH_(left)  NewOperationNode(operation_type::CTH,     left, nullptr)
+#define ASH_(left)  NewOperationNode(operation_type::ARCSH,   left, nullptr)
+#define ACH_(left)  NewOperationNode(operation_type::ARCCH,   left, nullptr)
+#define ATH_(left)  NewOperationNode(operation_type::ARCTH,   left, nullptr)
+#define ACTH_(left) NewOperationNode(operation_type::ARCCTH,  left, nullptr)
+#define LOG_(left, right) NewOperationNode(operation_type::LOG, left, right)
+#define LN_(left) LOG_(left, e_)
+#define DEG_(left, right) NewOperationNode(operation_type::DEG, left, right)
 
 static Node_t* DiffRec(Node_t* node, size_t target_hash) {
     switch (node->type) {
@@ -141,28 +259,57 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
                 case operation_type::MUL:
                     return ADD_(MUL_(dL, cR), MUL_(cL, dR));
                 case operation_type::DIV:
-                    return DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), MUL_(cR, cR));
+                    return DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), DEG_(cR, aNn(2)));
                 case operation_type::SIN:
-                    return COS_(cL);
+                    return CS_(cL);
                 case operation_type::COS:
-                    return MUL_(SIN_(cL), aNn(-1));
+                    return MUL_(SN_(cL), aNn(-1));
                 case operation_type::TAN:
+                    return DIV_(dL, DEG_(CS_(cL), aNn(2)));
                 case operation_type::CTAN:
+                    return DIV_(MUL_(dL, aNn(-1)), DEG_(SN_(cL), aNn(2)));
                 case operation_type::ARCSIN:
+                    return DIV_(dL, DEG_(SUB_(aNn(1), DEG_(cL, aNn(2))), aNn(1/2)));
                 case operation_type::ARCCOS:
+                    return DIV_(MUL_(dL, aNn(-1)), DEG_(SUB_(aNn(1), DEG_(cL, aNn(2))), aNn(1/2)));
                 case operation_type::ARCTAN:
+                    return DIV_(dL, ADD_(aNn(1), DEG_(cL, aNn(2))));
                 case operation_type::ARCCTAN:
+                    return DIV_(dL, ADD_(aNn(-1), DEG_(cL, aNn(2))));
                 case operation_type::SH:
+                    return CH_(cL);
                 case operation_type::CH:
+                    return SH_(cL);
                 case operation_type::TH:
+                    return DIV_(dL, DEG_(CH_(cL), aNn(2)));
                 case operation_type::CTH:
+                    return DIV_(MUL_(aNn(-1), dL), DEG_(SH_(cL), aNn(2)));
                 case operation_type::ARCSH:
+                    return DIV_(dL, DEG_(ADD_(DEG_(cL, aNn(2)), aNn(1)), aNn(1/2)));
                 case operation_type::ARCCH:
+                    return DIV_(dL, DEG_(SUB_(DEG_(cL, aNn(2)), aNn(1)), aNn(1/2)));
                 case operation_type::ARCTH:
+                    return DIV_(dL, SUB_(aNn(1), DEG_(cL, aNn(2))));
                 case operation_type::ARCCTH:
-                case operation_type::LN:
-                case operation_type::EXP:
-                    return nullptr;
+                    return DIV_(dL, SUB_(aNn(-1), DEG_(cL, aNn(2))));
+                case operation_type::LOG:
+                    if (node->right->type == node_type::NUMBER) {
+                        return DIV_(dL, MUL_(LN_(cR), cL));
+                    } else
+                    if (node->left->type == node_type::NUMBER) {
+                        return MUL_(aNn(-1), DIV_(MUL_(LN_(cL), DIV_(dR, cR)), DEG_(LN_(cR), aNn(2))));
+                    } else {
+                        return DIV_(SUB_(MUL_(DIV_(dL, cL), LN_(cR)), MUL_(DIV_(dR, cR), LN_(cL))), DEG_(LN_(cR), aNn(2)));
+                    }
+                case operation_type::DEG:
+                    if (node->right->type == node_type::NUMBER) {
+                        return MUL_(cR, MUL_(DEG_(cL, SUB_(cR, aNn(1))), dL));
+                    } else
+                    if (node->left->type == node_type::NUMBER) {
+                        return MUL_(DEG_(cL, cR), MUL_(dR, LN_(cL)));
+                    } else {
+                        return MUL_(DEG_(cL, cR), ADD_(MUL_(dR, LN_(cL)), MUL_(cR, DIV_(dL, cL))));
+                    }
                 case operation_type::DEFAULT:
                     return nullptr;
                 default:
@@ -190,14 +337,31 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 #undef cL
 #undef cR
 #undef aNn
+#undef e_
+#undef pi_
 #undef ADD_
 #undef SUB_
 #undef MUL_
 #undef DIV_
-#undef SIN_
-#undef COS_
-#undef TAN_
-#undef CTAN_
+#undef SN_
+#undef CS_
+#undef TN_
+#undef CTN_
+#undef ASN_
+#undef ACS_
+#undef ATN_
+#undef ACTN_
+#undef SH_
+#undef CH_
+#undef TH_
+#undef CTH_
+#undef ASH_
+#undef ACH_
+#undef ATH_
+#undef ACTH_
+#undef LOG_
+#undef LN_
+#undef DEG_
 
 static Node_t* NewNumberNode(double number) {
     union ValueData value;
@@ -240,63 +404,4 @@ static Node_t* CopyNode(Node_t* node) {
     new_node->hash = node->hash;
 
     return new_node;
-}
-
-//----------------------------------------------------------------------------------
-
-static double SolveRec(Node_t* node) {
-    if (node->type == node_type::OPERATION) {
-        switch (node->value.operation) {
-            case operation_type::ADD:
-                return Add(SolveRec(node->left), SolveRec(node->right));
-            case operation_type::SUB:
-                return Sub(SolveRec(node->left), SolveRec(node->right));
-            case operation_type::MUL:
-                return Mul(SolveRec(node->left), SolveRec(node->right));
-            case operation_type::DIV:
-                return Div(SolveRec(node->left), SolveRec(node->right));
-            case operation_type::SIN:
-                return Sin(SolveRec(node->left));
-            case operation_type::COS:
-                return Cos(SolveRec(node->left));
-            case operation_type::TAN:
-                return Tan(SolveRec(node->left));
-            case operation_type::CTAN:
-                return Ctan(SolveRec(node->left));
-            case operation_type::ARCSIN:
-            case operation_type::ARCCOS:
-            case operation_type::ARCTAN:
-            case operation_type::ARCCTAN:
-            case operation_type::SH:
-            case operation_type::CH:
-            case operation_type::TH:
-            case operation_type::CTH:
-            case operation_type::ARCSH:
-            case operation_type::ARCCH:
-            case operation_type::ARCTH:
-            case operation_type::ARCCTH:
-            case operation_type::LN:
-            case operation_type::EXP:
-                return 0;
-            case operation_type::DEFAULT:
-                return 0;
-            default:
-                printf("INVALID OPR\n");
-                return 0;
-        };
-    } else
-    if (node->type == node_type::VARIABLE) {
-        size_t hash = CalculateStringHash(node->value.variable);
-        for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
-            if (hash == VarTable[pos].hash) {
-                return VarTable[pos].value;
-            }
-        }
-        printf("invalid var\n");
-        return 0;
-    } else
-    if (node->type == node_type::NUMBER) {
-        return node->value.number;
-    }
-    return 0;
 }

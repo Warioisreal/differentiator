@@ -51,10 +51,6 @@ tree_return_t TreeDtorRec(Node_t** node, size_t* size) {
     if ((*node)->right != nullptr) {
         TreeDtorRec(&((*node)->right), size);
     }
-    /*
-    if ((*node)->allocated_node == true) {
-        free(const_cast<char*>((*node)->value));
-    }*/
     free(*node);
     *node = nullptr;
     (*size)--;

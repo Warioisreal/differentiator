@@ -45,6 +45,9 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
 };
 
 
+#define SUBTREE(tree_number) tree##tree_number
+
+
 static size_t djb2(size_t hash, size_t field);
 static Node_t* DiffRec(Node_t* node, size_t target_hash);
 static Node_t* NewNumberNode(double number);
@@ -161,6 +164,8 @@ double SolveRec(Node_t* node) {
                 return Log(SolveRec(node->left), SolveRec(node->right));
             case operation_type::DEG:
                 return Deg(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::D:
+                return 0;
             case operation_type::DEFAULT:
                 return 0;
             default:
@@ -186,6 +191,8 @@ double SolveRec(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
+#define SUBT calc_array->array[calc_array->size]
+
 void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree) {
     printf("По какой переменной дифференцировать?\n");
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
@@ -196,26 +203,41 @@ void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t d
     scanf("%s", var_name);
     size_t answ_hash = CalculateStringHash(var_name);
 
-    MAKE_TREE(tree1);
-    tree1.root = DiffRec(tree->root, answ_hash);
-    TreeCountNodes(tree1.root, &(tree1.size));
-    TreePrint(&tree1, "PRINT");
-
-
-    /*
     for (size_t curent_degree = 0; curent_degree < degree; curent_degree++) {
-        MAKE_TREE(tree1);
-        TreeDtorRec(&(tree1.root), &(tree1.size));
+        SUBT = (Tree_type*)calloc(1, sizeof(Tree_type));
+
+        SUBT->log = (LOG*)calloc(1, sizeof(LOG));
+
+        snprintf(SUBT->log->name, LOG_FILE_NAME_SIZE, "tree%zu", calc_array->size);
+
+
+        char full_folder_name[LOG_FOLDER_NAME_SIZE] = "";
+        GetFullFolderName(SUBT->log->name, full_folder_name);
+        UpdateFolder(full_folder_name);
+
+        TreeCtor(SUBT);
+
+        TreeDtorRec(&(SUBT->root), &(SUBT->size));
+
         if (curent_degree == 0) {
-            tree1.root = DiffRec(tree->root, answ_hash);
+            SUBT->root = DiffRec(tree->root, answ_hash);
         } else {
-            tree1.root = DiffRec(calc_array->array[calc_array->size]->root, answ_hash);
+            SUBT->root = DiffRec(calc_array->array[calc_array->size - 1]->root, answ_hash);
         }
-        TreeCountNodes(tree1.root, &(tree1.size));
+        TreeCountNodes(SUBT->root, &(SUBT->size));
         if (calc_array->size == calc_array->capacity) { ReallocSubTreesArray(calc_array); }
-        calc_array->array[calc_array->size++] = &tree1;
-    }*/
+
+        TreePrint(SUBT, "DIR");
+
+        calc_array->size++;
+    }
+
+    printf("DIR_%zu_TREE_NAME: %s\n",
+        degree,
+        calc_array->array[calc_array->size - 1]->log->name);
 }
+
+#undef SUBT
 
 #define dL DiffRec(node->left,  target_hash)
 #define dR DiffRec(node->right, target_hash)
@@ -247,6 +269,7 @@ void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t d
 #define LOG_(left, right) NewOperationNode(operation_type::LOG, left, right)
 #define LN_(left) LOG_(left, e_)
 #define DEG_(left, right) NewOperationNode(operation_type::DEG, left, right)
+#define D_(left, right) NewOperationNode(operation_type::D, left, right)
 
 static Node_t* DiffRec(Node_t* node, size_t target_hash) {
     switch (node->type) {
@@ -310,6 +333,8 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
                     } else {
                         return MUL_(DEG_(cL, cR), ADD_(MUL_(dR, LN_(cL)), MUL_(cR, DIV_(dL, cL))));
                     }
+                case operation_type::D:
+                    return nullptr; //DiffRec()
                 case operation_type::DEFAULT:
                     return nullptr;
                 default:
@@ -362,6 +387,7 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 #undef LOG_
 #undef LN_
 #undef DEG_
+#undef D_
 
 static Node_t* NewNumberNode(double number) {
     union ValueData value;
@@ -404,4 +430,23 @@ static Node_t* CopyNode(Node_t* node) {
     new_node->hash = node->hash;
 
     return new_node;
+}
+
+//----------------------------------------------------------------------------------
+
+void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array) {
+    TreeDtor(eq_tree);
+
+    for (size_t pos = 0; pos < calc_array->size; pos++) {
+        TreeDtor(calc_array->array[pos]);
+
+        free(calc_array->array[pos]->log);
+        calc_array->array[pos]->log = nullptr;
+
+        free(calc_array->array[pos]);
+        calc_array->array[pos] = nullptr;
+    }
+
+    free(calc_array->array);
+    calc_array->array = nullptr;
 }

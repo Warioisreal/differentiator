@@ -10,7 +10,7 @@ struct Node_t;
 
 
 const size_t VAR_TABLE_SIZE = 2;
-const size_t OPR_TABLE_SIZE = 23;
+const size_t OPR_TABLE_SIZE = 24;
 
 const size_t VARIABLE_NAME_SIZE  = 10;
 const size_t OPERATION_NAME_SIZE = 10;
@@ -52,7 +52,9 @@ typedef enum class Operations : char {
     ARCCTH = 20,
 
     LOG = 21,
-    DEG = 22
+    DEG = 22,
+
+    D = 23
 } operation_type;
 
 typedef enum class DfrReturn : char {
@@ -95,5 +97,7 @@ double SolveRec(Node_t* node);
 void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree);
 
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
+
+void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array);
 
 #endif //_DIFFERENTIATOR_H_

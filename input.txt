@@ -1,6 +1,1 @@
-(*  (x  nil nil)
-    (+  (cos    (y nil nil)
-                nil)
-        (6 nil nil)
-    )
-)
+(x nil nil)

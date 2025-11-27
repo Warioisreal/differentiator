@@ -6,9 +6,9 @@
 #include "optimazer.h"
 
 int main(void) {
-    MAKE_DFR(dfr_tree, calc_trees_array, 5);
+    MAKE_DFR(dfr_tree, calc_trees_array, 8);
 
-    TreeReadDB("inp.txt", &dfr_tree);
+    TreeReadDB("input.txt", &dfr_tree);
 
     OptimizeTree(&dfr_tree);
 
@@ -16,7 +16,7 @@ int main(void) {
 
     DiffDifferentiateEquation(&dfr_tree, &calc_trees_array, 3);
 
-    TreeDtor(&dfr_tree);
+    DiffDtor(&dfr_tree, &calc_trees_array);
 
     return 0;
 }

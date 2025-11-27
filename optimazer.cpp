@@ -1,4 +1,5 @@
 #include "tree/tree_func.h"
+#include "tree/checkers.h"
 
 #include "optimazer.h"
 
@@ -12,6 +13,8 @@ void OptimizeTree(Tree_type* tree) {
     }
 
     TreePrint(tree, "Optimize tree");
+
+    SubTreeFillGrey(tree->root);
 }
 
 
@@ -62,52 +65,53 @@ void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
         DeleteNeutralElements(tree, &(R_), is_update);
 
         if (OP_ == operation_type::MUL) {
-            if ((LT_ == node_type::NUMBER && LN_ == 0) || (RT_ == node_type::NUMBER && RN_ == 0)) {
+            if ((LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) || \
+                (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0)) {
                 union ValueData value;
                 value.number = 0;
                 MAKE_NUMBER_NODE;
             } else
-            if (LT_ == node_type::NUMBER && LN_ == 1) {
+            if (LT_ == node_type::NUMBER && CompareDouble(LN_, 1) == 0) {
                 union ValueData value;
                 value.number = RN_;
                 MAKE_NUMBER_NODE;
             } else
-            if (RT_ == node_type::NUMBER && RN_ == 1) {
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 1) == 0) {
                 union ValueData value;
                 value.number = LN_;
                 MAKE_NUMBER_NODE;
             }
         } else
         if (OP_ == operation_type::ADD) {
-            if (LT_ == node_type::NUMBER && LN_ == 0) {
+            if (LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) {
                 Node_t* new_node = MakeTreeElement(RT_, RV_);
                 COPY_NODE;
             } else
-            if (RT_ == node_type::NUMBER && RN_ == 0) {
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
                 Node_t* new_node = MakeTreeElement(LT_, LV_);
                 COPY_NODE;
             }
         } else
         if (OP_ == operation_type::SUB) {
-            if (RT_ == node_type::NUMBER && RN_ == 0) {
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
                 Node_t* new_node = MakeTreeElement(LT_, LV_);
                 COPY_NODE;
             }
         } else
         if (OP_ == operation_type::DIV) {
-            if (LT_ == node_type::NUMBER && LN_ == 0) {
+            if (LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) {
                 union ValueData value;
                 value.number = 0;
                 MAKE_NUMBER_NODE;
             }
         } else
         if (OP_ == operation_type::DEG) {
-            if (RT_ == node_type::NUMBER && RN_ == 0) {
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
                 union ValueData value;
                 value.number = 1;
                 MAKE_NUMBER_NODE;
             } else
-            if (RT_ == node_type::NUMBER && RN_ == 1) {
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 1) == 0) {
                 Node_t* new_node = MakeTreeElement(LT_, LV_);
                 COPY_NODE;
             }

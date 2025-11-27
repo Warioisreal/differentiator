@@ -29,3 +29,15 @@ operation_type GetTypeOperation(size_t hash) {
 
     return operation_type::DEFAULT;
 }
+
+//----------------------------------------------------------------------------------
+
+int CompareDouble(double a, double b) {
+    if (a - b > EPSILON) {
+        return 1;
+    } else if (a - b < -EPSILON) {
+        return -1;
+    } else {
+        return 0;
+    }
+}

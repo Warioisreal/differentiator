@@ -28,6 +28,7 @@ struct Tree_type {
     UpdateFolder(full_folder_name); \
     TreeCtor(&tree_name)
 
+
 #define CHECK_ERROR_AND_RETURN(tree, message, ret, result) if (ret != result) { TreeDump(tree, message, ret); return ret; }
 
 #define TREE_VERIFY_AND_RETURN(tree, node, check_size, message) BEGIN { \

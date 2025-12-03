@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "define_lib.h"
 
 #include "tree/tree_func.h"
@@ -41,19 +43,38 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     {operation_type::ARCCTH, "arccth", 0},
 
     {operation_type::LOG, "log",  0},
-    {operation_type::DEG, "^", 0}
+    {operation_type::POW, "^", 0},
+
+    {operation_type::D, "d", 0}
 };
 
 
 #define SUBTREE(tree_number) tree##tree_number
 
+#define INIT_SUBTREE \
+    SUBT = (Tree_type*)calloc(1, sizeof(Tree_type)); \
+    SUBT->log = (LOG*)calloc(1, sizeof(LOG)); \
+    snprintf(SUBT->log->name, LOG_FILE_NAME_SIZE, "tree%zu", calc_array->size); \
+    char full_folder_name[LOG_FOLDER_NAME_SIZE] = ""; \
+    GetFullFolderName(SUBT->log->name, full_folder_name); \
+    UpdateFolder(full_folder_name); \
+    TreeCtor(SUBT); \
+    TreeDtorRec(&(SUBT->root), &(SUBT->size)); \
+    if (calc_array->size == calc_array->capacity) { ReallocSubTreesArray(calc_array); }
+
 
 static size_t djb2(size_t hash, size_t field);
 static Node_t* DiffRec(Node_t* node, size_t target_hash);
 static Node_t* NewNumberNode(double number);
+static Node_t* NewVariableNode(const char* var);
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r);
 static Node_t* NewNode(node_type node_t, union ValueData value, Node_t* node_l, Node_t* node_r);
 static Node_t* CopyNode(Node_t* node);
+static void PrintVarTable();
+static size_t ReadVarNumber();
+static size_t GetVarNumber(const char* var_name);
+
+static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash);
 
 
 void CalculateTables(void) {
@@ -162,8 +183,8 @@ double SolveRec(Node_t* node) {
                 return Arcctanh(SolveRec(node->left));
             case operation_type::LOG:
                 return Log(SolveRec(node->left), SolveRec(node->right));
-            case operation_type::DEG:
-                return Deg(SolveRec(node->left), SolveRec(node->right));
+            case operation_type::POW:
+                return Pow(SolveRec(node->left), SolveRec(node->right));
             case operation_type::D:
                 return 0;
             case operation_type::DEFAULT:
@@ -174,14 +195,14 @@ double SolveRec(Node_t* node) {
         };
     } else
     if (node->type == node_type::VARIABLE) {
-        size_t hash = CalculateStringHash(node->value.variable);
-        for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
-            if (hash == VarTable[pos].hash) {
-                return VarTable[pos].value;
-            }
+        size_t var_number = GetVarNumber(node->value.variable);
+
+        if (var_number == VAR_TABLE_SIZE) {
+            printf("invalid var\n");
+            return 0;
         }
-        printf("invalid var\n");
-        return 0;
+
+        return VarTable[var_number].value;
     } else
     if (node->type == node_type::NUMBER) {
         return node->value.number;
@@ -191,54 +212,60 @@ double SolveRec(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-#define SUBT calc_array->array[calc_array->size]
-
-void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree) {
+void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array) {
     printf("По какой переменной дифференцировать?\n");
-    for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
-        printf("%s ", VarTable[pos].name);
-    } printf("\n");
 
-    char var_name[VARIABLE_NAME_SIZE] = "";
-    scanf("%s", var_name);
-    size_t answ_hash = CalculateStringHash(var_name);
+    PrintVarTable();
 
-    for (size_t curent_degree = 0; curent_degree < degree; curent_degree++) {
-        SUBT = (Tree_type*)calloc(1, sizeof(Tree_type));
+    size_t var_num = ReadVarNumber();
 
-        SUBT->log = (LOG*)calloc(1, sizeof(LOG));
-
-        snprintf(SUBT->log->name, LOG_FILE_NAME_SIZE, "tree%zu", calc_array->size);
-
-
-        char full_folder_name[LOG_FOLDER_NAME_SIZE] = "";
-        GetFullFolderName(SUBT->log->name, full_folder_name);
-        UpdateFolder(full_folder_name);
-
-        TreeCtor(SUBT);
-
-        TreeDtorRec(&(SUBT->root), &(SUBT->size));
-
-        if (curent_degree == 0) {
-            SUBT->root = DiffRec(tree->root, answ_hash);
-        } else {
-            SUBT->root = DiffRec(calc_array->array[calc_array->size - 1]->root, answ_hash);
-        }
-        TreeCountNodes(SUBT->root, &(SUBT->size));
-        if (calc_array->size == calc_array->capacity) { ReallocSubTreesArray(calc_array); }
-
-        TreePrint(SUBT, "DIR");
-
-        calc_array->size++;
+    if (var_num == VAR_TABLE_SIZE) {
+        printf("invalid var\n");
+        return;
     }
 
+    size_t var_hash = VarTable[var_num].hash;
+
+    printf("Какую по счёту производную найти?\n");
+
+    size_t power = 0;
+
+    scanf("%zu", &power);
+
+    DiffDifferentiateEquation(tree, calc_array, power, var_hash);
+
     printf("DIR_%zu_TREE_NAME: %s\n",
-        degree,
+        power,
         calc_array->array[calc_array->size - 1]->log->name);
 }
 
-#undef SUBT
+//=================================================================================
+#define ARR calc_array->array
+#define SIZE calc_array->size
+#define SUBT ARR[SIZE]
+//=================================================================================
 
+static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash) {
+    for (size_t curent_power = 0; curent_power < power; curent_power++) {
+        INIT_SUBTREE;
+
+        if (curent_power == 0) {
+            SUBT->root = DiffRec(tree->root, hash);
+        } else {
+            SUBT->root = DiffRec(ARR[SIZE - 1]->root, hash);
+        }
+
+        TreeCountNodes(SUBT->root, &(SUBT->size));
+
+        TreePrint(SUBT, "DIR");
+
+        OptimizeTree(SUBT);
+
+        SIZE++;
+    }
+}
+
+//=================================================================================
 #define dL DiffRec(node->left,  target_hash)
 #define dR DiffRec(node->right, target_hash)
 #define cL CopyNode(node->left)
@@ -268,8 +295,9 @@ void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t d
 #define ACTH_(left) NewOperationNode(operation_type::ARCCTH,  left, nullptr)
 #define LOG_(left, right) NewOperationNode(operation_type::LOG, left, right)
 #define LN_(left) LOG_(left, e_)
-#define DEG_(left, right) NewOperationNode(operation_type::DEG, left, right)
+#define POW_(left, right) NewOperationNode(operation_type::POW, left, right)
 #define D_(left, right) NewOperationNode(operation_type::D, left, right)
+//=================================================================================
 
 static Node_t* DiffRec(Node_t* node, size_t target_hash) {
     switch (node->type) {
@@ -282,56 +310,56 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
                 case operation_type::MUL:
                     return ADD_(MUL_(dL, cR), MUL_(cL, dR));
                 case operation_type::DIV:
-                    return DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), DEG_(cR, aNn(2)));
+                    return DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), POW_(cR, aNn(2)));
                 case operation_type::SIN:
                     return CS_(cL);
                 case operation_type::COS:
                     return MUL_(SN_(cL), aNn(-1));
                 case operation_type::TAN:
-                    return DIV_(dL, DEG_(CS_(cL), aNn(2)));
+                    return DIV_(dL, POW_(CS_(cL), aNn(2)));
                 case operation_type::CTAN:
-                    return DIV_(MUL_(dL, aNn(-1)), DEG_(SN_(cL), aNn(2)));
+                    return DIV_(MUL_(dL, aNn(-1)), POW_(SN_(cL), aNn(2)));
                 case operation_type::ARCSIN:
-                    return DIV_(dL, DEG_(SUB_(aNn(1), DEG_(cL, aNn(2))), aNn(1/2)));
+                    return DIV_(dL, POW_(SUB_(aNn(1), POW_(cL, aNn(2))), aNn(1/2)));
                 case operation_type::ARCCOS:
-                    return DIV_(MUL_(dL, aNn(-1)), DEG_(SUB_(aNn(1), DEG_(cL, aNn(2))), aNn(1/2)));
+                    return DIV_(MUL_(dL, aNn(-1)), POW_(SUB_(aNn(1), POW_(cL, aNn(2))), aNn(1/2)));
                 case operation_type::ARCTAN:
-                    return DIV_(dL, ADD_(aNn(1), DEG_(cL, aNn(2))));
+                    return DIV_(dL, ADD_(aNn(1), POW_(cL, aNn(2))));
                 case operation_type::ARCCTAN:
-                    return DIV_(dL, ADD_(aNn(-1), DEG_(cL, aNn(2))));
+                    return DIV_(dL, ADD_(aNn(-1), POW_(cL, aNn(2))));
                 case operation_type::SH:
                     return CH_(cL);
                 case operation_type::CH:
                     return SH_(cL);
                 case operation_type::TH:
-                    return DIV_(dL, DEG_(CH_(cL), aNn(2)));
+                    return DIV_(dL, POW_(CH_(cL), aNn(2)));
                 case operation_type::CTH:
-                    return DIV_(MUL_(aNn(-1), dL), DEG_(SH_(cL), aNn(2)));
+                    return DIV_(MUL_(aNn(-1), dL), POW_(SH_(cL), aNn(2)));
                 case operation_type::ARCSH:
-                    return DIV_(dL, DEG_(ADD_(DEG_(cL, aNn(2)), aNn(1)), aNn(1/2)));
+                    return DIV_(dL, POW_(ADD_(POW_(cL, aNn(2)), aNn(1)), aNn(1/2)));
                 case operation_type::ARCCH:
-                    return DIV_(dL, DEG_(SUB_(DEG_(cL, aNn(2)), aNn(1)), aNn(1/2)));
+                    return DIV_(dL, POW_(SUB_(POW_(cL, aNn(2)), aNn(1)), aNn(1/2)));
                 case operation_type::ARCTH:
-                    return DIV_(dL, SUB_(aNn(1), DEG_(cL, aNn(2))));
+                    return DIV_(dL, SUB_(aNn(1), POW_(cL, aNn(2))));
                 case operation_type::ARCCTH:
-                    return DIV_(dL, SUB_(aNn(-1), DEG_(cL, aNn(2))));
+                    return DIV_(dL, SUB_(aNn(-1), POW_(cL, aNn(2))));
                 case operation_type::LOG:
                     if (node->right->type == node_type::NUMBER) {
                         return DIV_(dL, MUL_(LN_(cR), cL));
                     } else
                     if (node->left->type == node_type::NUMBER) {
-                        return MUL_(aNn(-1), DIV_(MUL_(LN_(cL), DIV_(dR, cR)), DEG_(LN_(cR), aNn(2))));
+                        return MUL_(aNn(-1), DIV_(MUL_(LN_(cL), DIV_(dR, cR)), POW_(LN_(cR), aNn(2))));
                     } else {
-                        return DIV_(SUB_(MUL_(DIV_(dL, cL), LN_(cR)), MUL_(DIV_(dR, cR), LN_(cL))), DEG_(LN_(cR), aNn(2)));
+                        return DIV_(SUB_(MUL_(DIV_(dL, cL), LN_(cR)), MUL_(DIV_(dR, cR), LN_(cL))), POW_(LN_(cR), aNn(2)));
                     }
-                case operation_type::DEG:
+                case operation_type::POW:
                     if (node->right->type == node_type::NUMBER) {
-                        return MUL_(cR, MUL_(DEG_(cL, SUB_(cR, aNn(1))), dL));
+                        return MUL_(cR, MUL_(POW_(cL, SUB_(cR, aNn(1))), dL));
                     } else
                     if (node->left->type == node_type::NUMBER) {
-                        return MUL_(DEG_(cL, cR), MUL_(dR, LN_(cL)));
+                        return MUL_(POW_(cL, cR), MUL_(dR, LN_(cL)));
                     } else {
-                        return MUL_(DEG_(cL, cR), ADD_(MUL_(dR, LN_(cL)), MUL_(cR, DIV_(dL, cL))));
+                        return MUL_(POW_(cL, cR), ADD_(MUL_(dR, LN_(cL)), MUL_(cR, DIV_(dL, cL))));
                     }
                 case operation_type::D:
                     return nullptr; //DiffRec()
@@ -356,6 +384,55 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
             return nullptr;
     };
 }
+
+//----------------------------------------------------------------------------------
+
+//======================================
+#define FACT_(num) NewNumberNode()
+#define aNv(var) NewVariableNode(var)
+//======================================
+
+void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy) {
+    printf("По какой переменной строить ряд?\n");
+
+    PrintVarTable();
+
+    size_t var_num = ReadVarNumber();
+
+    if (var_num == VAR_TABLE_SIZE) {
+        printf("invalid var\n");
+        return;
+    }
+
+    DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash);
+
+    INIT_SUBTREE;
+
+    SUBT->root = CopyNode(tree->root);
+    SUBT->size = tree->size;
+    SIZE++;
+
+    for (size_t iter = 0; iter < accuracy; iter++) {
+        Node_t* node = CopyNode(ARR[SIZE - 1 - accuracy + iter]->root);
+
+        // прибавляем (k) производную * ([var] - dot) ^ k / k!
+        ARR[SIZE - 1]->root = ADD_(ARR[SIZE - 1]->root, DIV_(MUL_(node, POW_(SUB_(aNv(VarTable[var_num].name), aNn(dot)), aNn(iter + 1))), aNn(Factorial((double)(iter + 1)))));
+        ARR[SIZE - 1]->size += 1 + ARR[SIZE - 1 - accuracy + iter]->size + 8;
+
+        OptimizeTree(ARR[SIZE - 1]);
+    }
+
+    TreePrint(ARR[SIZE - 1], "Taylor");
+}
+
+//======================================
+#undef FACT_
+//======================================
+
+//=================================================================================
+#undef ARR
+#undef SIZE
+#undef SUBT
 
 #undef dL
 #undef dR
@@ -386,8 +463,9 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 #undef ACTH_
 #undef LOG_
 #undef LN_
-#undef DEG_
+#undef POW_
 #undef D_
+//=================================================================================
 
 static Node_t* NewNumberNode(double number) {
     union ValueData value;
@@ -395,6 +473,14 @@ static Node_t* NewNumberNode(double number) {
     value.number = number;
 
     return NewNode(node_type::NUMBER, value, nullptr, nullptr);
+}
+
+static Node_t* NewVariableNode(const char* var) {
+    union ValueData value;
+
+    value.variable = var;
+
+    return NewNode(node_type::VARIABLE, value, nullptr, nullptr);
 }
 
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r) {
@@ -449,4 +535,35 @@ void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array) {
 
     free(calc_array->array);
     calc_array->array = nullptr;
+}
+
+//----------------------------------------------------------------------------------
+
+static void PrintVarTable() {
+    for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
+        printf("%s ", VarTable[pos].name);
+    } printf("\n");
+}
+
+//----------------------------------------------------------------------------------
+
+static size_t ReadVarNumber() {
+    char var_name[VARIABLE_NAME_SIZE] = "";
+    scanf("%s", var_name);
+
+    return GetVarNumber(var_name);
+}
+
+static size_t GetVarNumber(const char* var_name) {
+    size_t hash = CalculateStringHash(var_name);
+
+    for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
+        if (hash == VarTable[pos].hash) {
+            if (strcmp(var_name, VarTable[pos].name) == 0) {
+                return pos;
+            }
+        }
+    }
+
+    return VAR_TABLE_SIZE;
 }

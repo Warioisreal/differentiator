@@ -2,5 +2,9 @@ digraph G{
 node[shape=Mrecord, style=filled];
 rankdir=TB;
 ordering=out;
-node100F5DAB0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 100F5DAB0 | value = x | {<left> 0 | <right> 0}}"];
+node1033DDAF0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 1033DDAF0 | value = ^ | {<left> 1033DDB70 | <right> 1033DDBB0}}"];
+node1033DDAF0: <left> -> node1033DDB70 [color="#ff0000"];
+node1033DDB70 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 1033DDB70 | value = 2 | {<left> 0 | <right> 0}}"];
+node1033DDAF0: <right> -> node1033DDBB0 [color="#0000ff"];
+node1033DDBB0 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 1033DDBB0 | value = x | {<left> 0 | <right> 0}}"];
 }

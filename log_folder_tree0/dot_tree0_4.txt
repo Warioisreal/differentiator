@@ -10,5 +10,5 @@ node1033DF460 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr 
 node1033DF4E0: <right> -> node1033DF4A0 [color="#0000ff"];
 node1033DF4A0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF4A0 | value = x | {<left> 0 | <right> 0}}"];
 node1033DF660: <right> -> node1033DF520 [color="#0000ff"];
-node1033DF520 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 1033DF520 | value = 0.693147 | {<left> 0 | <right> 0}}"];
+node1033DF520 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF520 | value = 0.693147 | {<left> 0 | <right> 0}}"];
 }

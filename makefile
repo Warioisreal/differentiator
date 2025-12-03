@@ -18,7 +18,7 @@ EXECUTABLE = binary_file
 
 TREE_SRC_DIR = tree
 TREE_OBJDIR = 0_tree_obj
-TREE_SOURCES = tree_func.cpp tree_DB_func.cpp tree_node_func.cpp logger.cpp dot.cpp checkers.cpp
+TREE_SOURCES = tree_func.cpp tree_DB_func.cpp tree_node_func.cpp checkers.cpp logger.cpp dot.cpp latex.cpp
 TREE_OBJECTS = $(addprefix $(TREE_OBJDIR)/, $(TREE_SOURCES:.cpp=.o))
 TREE_LIB = tree_lib.a
 

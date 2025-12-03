@@ -4,6 +4,9 @@
 #include "optimazer.h"
 
 
+static void ReplaceParentOnChild(Node_t** parent, Node_t* child);
+
+
 void OptimizeTree(Tree_type* tree) {
     bool is_update = true;
     while (is_update == true) {
@@ -36,11 +39,6 @@ void OptimizeTree(Tree_type* tree) {
     tree->size++; \
     *is_update = true;
 
-#define COPY_NODE \
-    TreeDtorRec(node, &(tree->size)); \
-    *node = new_node; \
-    tree->size++; \
-    *is_update = true;
 
 void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
     if (*node == nullptr) { return; }
@@ -49,10 +47,12 @@ void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
         OptimizeConstantElements(tree, &(L_), is_update);
         OptimizeConstantElements(tree, &(R_), is_update);
 
-        if (LT_ == node_type::NUMBER && RT_ == node_type::NUMBER) {
-            union ValueData value;
-            value.number = SolveRec(*node);
-            MAKE_NUMBER_NODE;
+        if ((L_ != nullptr) && (R_ != nullptr)) {
+            if (LT_ == node_type::NUMBER && RT_ == node_type::NUMBER) {
+                union ValueData value;
+                value.number = SolveRec(*node);
+                MAKE_NUMBER_NODE;
+            }
         }
     }
 }
@@ -61,8 +61,8 @@ void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
     if (*node == nullptr) { return; }
 
     if (T_ == node_type::OPERATION) {
-        DeleteNeutralElements(tree, &(L_), is_update);
-        DeleteNeutralElements(tree, &(R_), is_update);
+        DeleteNeutralElements(tree, &L_, is_update);
+        DeleteNeutralElements(tree, &R_, is_update);
 
         if (OP_ == operation_type::MUL) {
             if ((LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) || \
@@ -72,30 +72,33 @@ void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
                 MAKE_NUMBER_NODE;
             } else
             if (LT_ == node_type::NUMBER && CompareDouble(LN_, 1) == 0) {
-                union ValueData value;
-                value.number = RN_;
-                MAKE_NUMBER_NODE;
+                TreeDtorRec(&L_, &(tree->size));
+                ReplaceParentOnChild(node, R_);
+                tree->size--;
             } else
             if (RT_ == node_type::NUMBER && CompareDouble(RN_, 1) == 0) {
-                union ValueData value;
-                value.number = LN_;
-                MAKE_NUMBER_NODE;
+                TreeDtorRec(&R_, &(tree->size));
+                ReplaceParentOnChild(node, L_);
+                tree->size--;
             }
         } else
         if (OP_ == operation_type::ADD) {
             if (LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) {
-                Node_t* new_node = MakeTreeElement(RT_, RV_);
-                COPY_NODE;
+                TreeDtorRec(&L_, &(tree->size));
+                ReplaceParentOnChild(node, R_);
+                tree->size--;
             } else
             if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
-                Node_t* new_node = MakeTreeElement(LT_, LV_);
-                COPY_NODE;
+                TreeDtorRec(&R_, &(tree->size));
+                ReplaceParentOnChild(node, L_);
+                tree->size--;
             }
         } else
         if (OP_ == operation_type::SUB) {
             if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
-                Node_t* new_node = MakeTreeElement(LT_, LV_);
-                COPY_NODE;
+                TreeDtorRec(&R_, &(tree->size));
+                ReplaceParentOnChild(node, L_);
+                tree->size--;
             }
         } else
         if (OP_ == operation_type::DIV) {
@@ -103,20 +106,32 @@ void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
                 union ValueData value;
                 value.number = 0;
                 MAKE_NUMBER_NODE;
+            } else
+            if (RT_ == node_type::NUMBER && CompareDouble(RN_, 1) == 0) {
+                TreeDtorRec(&R_, &(tree->size));
+                ReplaceParentOnChild(node, L_);
+                tree->size--;
             }
         } else
-        if (OP_ == operation_type::DEG) {
+        if (OP_ == operation_type::POW) {
             if (RT_ == node_type::NUMBER && CompareDouble(RN_, 0) == 0) {
                 union ValueData value;
                 value.number = 1;
                 MAKE_NUMBER_NODE;
             } else
             if (RT_ == node_type::NUMBER && CompareDouble(RN_, 1) == 0) {
-                Node_t* new_node = MakeTreeElement(LT_, LV_);
-                COPY_NODE;
+                TreeDtorRec(&R_, &(tree->size));
+                ReplaceParentOnChild(node, L_);
+                tree->size--;
             }
         }
     }
+}
+
+static void ReplaceParentOnChild(Node_t** parent, Node_t* child) {
+    free(*parent);
+    *parent = child;
+    MakeYellowElem(*parent);
 }
 
 #undef T_

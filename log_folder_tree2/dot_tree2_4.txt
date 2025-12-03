@@ -2,9 +2,9 @@ digraph G{
 node[shape=Mrecord, style=filled];
 rankdir=TB;
 ordering=out;
-node8C48004C0 [color="#C0C000", fillcolor="#F0F0A0", penwidth="2", label="{addr = 8C48004C0 | value = * | {<left> 8C48002C0 | <right> 8C4800480}}"];
+node8C48004C0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C48004C0 | value = * | {<left> 8C48002C0 | <right> 8C4800480}}"];
 node8C48004C0: <left> -> node8C48002C0 [color="#ff0000"];
-node8C48002C0 [color="#C0C000", fillcolor="#F0F0A0", penwidth="2", label="{addr = 8C48002C0 | value = * | {<left> 8C4800240 | <right> 8C4800280}}"];
+node8C48002C0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C48002C0 | value = * | {<left> 8C4800240 | <right> 8C4800280}}"];
 node8C48002C0: <left> -> node8C4800240 [color="#ff0000"];
 node8C4800240 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C4800240 | value = * | {<left> 8C4800040 | <right> 8C4800200}}"];
 node8C4800240: <left> -> node8C4800040 [color="#ff0000"];
@@ -14,7 +14,7 @@ node8C48000C0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr 
 node8C4800040: <right> -> node8C4800080 [color="#0000ff"];
 node8C4800080 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C4800080 | value = x | {<left> 0 | <right> 0}}"];
 node8C4800240: <right> -> node8C4800200 [color="#0000ff"];
-node8C4800200 [color="#00C000", fillcolor="#A0F0A0", penwidth="2", label="{addr = 8C4800200 | value = 0.693147 | {<left> 0 | <right> 0}}"];
+node8C4800200 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C4800200 | value = 0.693147 | {<left> 0 | <right> 0}}"];
 node8C48002C0: <right> -> node8C4800280 [color="#0000ff"];
 node8C4800280 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 8C4800280 | value = 0.693147 | {<left> 0 | <right> 0}}"];
 node8C48004C0: <right> -> node8C4800480 [color="#0000ff"];

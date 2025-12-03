@@ -10,11 +10,23 @@ int main(void) {
 
     TreeReadDB("input.txt", &dfr_tree);
 
-    OptimizeTree(&dfr_tree);
+    CreateTaylorSeries(&dfr_tree, &calc_trees_array, 1, 3);
 
-    DiffSolveEquation(&dfr_tree);
+    TreePrint(calc_trees_array.array[3], "abc");
 
-    DiffDifferentiateEquation(&dfr_tree, &calc_trees_array, 3);
+//     OptimizeTree(&dfr_tree);
+//
+//     DiffSolveEquation(&dfr_tree);
+//
+    // DiffUserFindDerivative(&dfr_tree, &calc_trees_array);
+
+//     char* latex_formula = TreeToLatex(calc_trees_array.array[0]->root);
+//
+//     FILE* latex_file = fopen("formula.tex", "w");
+//     StartLatex(latex_file);
+//     fprintf(latex_file, "%s\n", latex_formula);
+//     FinishLatex(latex_file);
+//     free(latex_formula);
 
     DiffDtor(&dfr_tree, &calc_trees_array);
 

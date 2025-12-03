@@ -52,7 +52,7 @@ typedef enum class Operations : char {
     ARCCTH = 20,
 
     LOG = 21,
-    DEG = 22,
+    POW = 22,
 
     D = 23
 } operation_type;
@@ -92,9 +92,12 @@ struct ExtraTrees {
 size_t CalculateStringHash(const char* src);
 void CalculateTables(void);
 
+void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy);
+
 double DiffSolveEquation(Tree_type* tree);
 double SolveRec(Node_t* node);
-void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree);
+
+void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array);
 
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
 

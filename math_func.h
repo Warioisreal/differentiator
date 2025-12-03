@@ -28,9 +28,11 @@ double Arcctanh(double a);
 
 double Log(double a, double b);
 
-double Deg(double a, double b);
+double Pow(double a, double b);
 
 double GetE(void);
 double GetPi(void);
+
+double Factorial(double a);
 
 #endif //_MATH_FUNC_H_

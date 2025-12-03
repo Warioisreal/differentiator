@@ -41,9 +41,16 @@ double Log(double a, double b) { return log(a) / log(b); }
 
 //----------------------------------------------------------------------------------
 
-double Deg(double a, double b) { return pow(a, b); }
+double Pow(double a, double b) { return pow(a, b); }
 
 //----------------------------------------------------------------------------------
 
 double GetE(void)  { return M_E; }
 double GetPi(void) { return M_PI; }
+
+//----------------------------------------------------------------------------------
+
+double Factorial(double a) {
+    if (a <= 1) { return 1; }
+    return a * Factorial(a - 1);
+}

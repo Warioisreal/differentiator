@@ -36,6 +36,7 @@ tree_return_t TreeDtor(Tree_type* tree) {
     TreePrint(tree, "Dtor");
 
     FinishLog(&(tree->log->file_log));
+
     return TreeDtorRec(&(tree->root), &(tree->size));
 }
 
@@ -51,6 +52,7 @@ tree_return_t TreeDtorRec(Node_t** node, size_t* size) {
     if ((*node)->right != nullptr) {
         TreeDtorRec(&((*node)->right), size);
     }
+
     free(*node);
     *node = nullptr;
     (*size)--;

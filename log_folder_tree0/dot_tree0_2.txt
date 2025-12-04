@@ -2,21 +2,7 @@ digraph G{
 node[shape=Mrecord, style=filled];
 rankdir=TB;
 ordering=out;
-node1033DF660 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF660 | value = * | {<left> 1033DF4E0 | <right> 1033DF620}}"];
-node1033DF660: <left> -> node1033DF4E0 [color="#ff0000"];
-node1033DF4E0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF4E0 | value = ^ | {<left> 1033DF460 | <right> 1033DF4A0}}"];
-node1033DF4E0: <left> -> node1033DF460 [color="#ff0000"];
-node1033DF460 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF460 | value = 2 | {<left> 0 | <right> 0}}"];
-node1033DF4E0: <right> -> node1033DF4A0 [color="#0000ff"];
-node1033DF4A0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF4A0 | value = x | {<left> 0 | <right> 0}}"];
-node1033DF660: <right> -> node1033DF620 [color="#0000ff"];
-node1033DF620 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF620 | value = * | {<left> 1033DF520 | <right> 1033DF5E0}}"];
-node1033DF620: <left> -> node1033DF520 [color="#ff0000"];
-node1033DF520 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF520 | value = 1 | {<left> 0 | <right> 0}}"];
-node1033DF620: <right> -> node1033DF5E0 [color="#0000ff"];
-node1033DF5E0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF5E0 | value = log | {<left> 1033DF560 | <right> 1033DF5A0}}"];
-node1033DF5E0: <left> -> node1033DF560 [color="#ff0000"];
-node1033DF560 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF560 | value = 2 | {<left> 0 | <right> 0}}"];
-node1033DF5E0: <right> -> node1033DF5A0 [color="#0000ff"];
-node1033DF5A0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 1033DF5A0 | value = 2.71828 | {<left> 0 | <right> 0}}"];
+node10547F360 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 10547F360 | value = cos | {<left> 10547DB70 | <right> 0}}"];
+node10547F360: <left> -> node10547DB70 [color="#ff0000"];
+node10547DB70 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 10547DB70 | value = x | {<left> 0 | <right> 0}}"];
 }

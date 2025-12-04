@@ -5,13 +5,13 @@
 
 
 tree_return_t TreeCtor(Tree_type* tree) {
-    FILE* file_ = nullptr;
-    StartLog(&file_, tree->log->name);
-    if (file_ == nullptr) {
+    FILE* log_file_ = nullptr;
+    StartLog(&log_file_, tree->log->name);
+    if (log_file_ == nullptr) {
         TreeDump(tree, "LOG FILE OPEN ERROR", tree_return_t::INVALID_LOG);
         return tree_return_t::INVALID_LOG;
     }
-    tree->log->file_log   = file_;
+    tree->log->file_log   = log_file_;
     tree->log->dump_count = 1;
 
     union ValueData value;

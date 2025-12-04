@@ -12,9 +12,9 @@ void GetFullFolderName(const char* list_name, char* buffer) {
 
 void UpdateFolder(const char* name_folder) {
     char command[COMMAND_SIZE] = "";
-    snprintf(command, LOG_FOLDER_NAME_SIZE, "%s%s", "rm -r ", name_folder);
+    snprintf(command, LOG_FOLDER_NAME_SIZE, "rm -r %s", name_folder);
     system(command);
-    snprintf(command, LOG_FOLDER_NAME_SIZE, "%s%s", "mkdir ", name_folder);
+    snprintf(command, LOG_FOLDER_NAME_SIZE, "mkdir %s", name_folder);
     system(command);
 }
 
@@ -97,18 +97,6 @@ void GoLog(Node_t* root, size_t size, Node_t* node, const char* message, LOG* lo
 
 static void GoLogRec(Node_t* node, FILE* file_dot) {
     char params[DOT_PARAMS_SIZE] = "";
-    // char left[10] = "";
-    // char right[10] = "";
-    // if (node->left != nullptr) {
-    //     snprintf(left, 10, "Да");
-    // } else {
-    //     snprintf(left, 10, "0");
-    // }
-    // if (node->right != nullptr) {
-    //     snprintf(right, 10, "Нет");
-    // } else {
-    //     snprintf(right, 10, "0");
-    // }
 
     if (node->type == node_type::OPERATION || node->type == node_type::DEFAULT) {
         for (size_t pos = 0; pos < OPR_TABLE_SIZE; pos++) {

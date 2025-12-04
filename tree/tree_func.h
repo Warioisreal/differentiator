@@ -5,6 +5,7 @@
 #include "define_lib.h"
 
 #include "logger.h"
+#include "latex.h"
 
 #include "tree_node_func.h"
 
@@ -13,6 +14,7 @@ struct Tree_type {
     Node_t* root = nullptr;
     size_t size = 0;
     LOG* log = nullptr;
+    LATEX* latex = nullptr;
 };
 
 #define MAKE_LOG(tree_name, log_name) \

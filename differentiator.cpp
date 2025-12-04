@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "define_lib.h"
+#include "gnuplot.h"
 
 #include "tree/tree_func.h"
 #include "math_func.h"
@@ -60,7 +61,7 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     UpdateFolder(full_folder_name); \
     TreeCtor(SUBT); \
     TreeDtorRec(&(SUBT->root), &(SUBT->size)); \
-    if (calc_array->size == calc_array->capacity) { ReallocSubTreesArray(calc_array); }
+    if (calc_array->size == calc_array->capacity - 1) { ReallocSubTreesArray(calc_array); }
 
 
 static size_t djb2(size_t hash, size_t field);
@@ -73,8 +74,9 @@ static Node_t* CopyNode(Node_t* node);
 static void PrintVarTable();
 static size_t ReadVarNumber();
 static size_t GetVarNumber(const char* var_name);
-
 static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash);
+static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num);
+static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array);
 
 
 void CalculateTables(void) {
@@ -119,8 +121,8 @@ dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size) {
     return dfr_return_t::OK;
 }
 
-dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array) {
-    Tree_type** array = (Tree_type**)realloc(calc_array, 2 * calc_array->capacity * sizeof(Tree_type*));
+static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array) {
+    Tree_type** array = (Tree_type**)realloc(calc_array->array, 2 * calc_array->capacity * sizeof(Tree_type*));
 
     if (array == nullptr) { return dfr_return_t::ERROR; }
 
@@ -239,11 +241,129 @@ void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array) {
         calc_array->array[calc_array->size - 1]->log->name);
 }
 
+void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array) {
+    printf("По какой переменной строить ряд?\n");
+
+    PrintVarTable();
+
+    size_t var_num = ReadVarNumber();
+
+    if (var_num == VAR_TABLE_SIZE) {
+        printf("invalid var\n");
+        return;
+    }
+
+    printf("В окрестности какой точки?\n");
+    double dot = 0;
+    scanf("%lg", &dot);
+
+    printf("С какой точностью?\n");
+    size_t accuracy = 0;
+    scanf("%zu", &accuracy);
+
+    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num);
+}
+
 //=================================================================================
 #define ARR calc_array->array
 #define SIZE calc_array->size
 #define SUBT ARR[SIZE]
 //=================================================================================
+
+#define GET_PARAMS \
+    printf("Какая переменная является аргументом?\n"); \
+    PrintVarTable(); \
+    size_t var_num = ReadVarNumber(); \
+    if (var_num == VAR_TABLE_SIZE) { \
+        printf("invalid var\n"); \
+        return; \
+    } \
+    printf("В окрестности какой точки?\n"); \
+    double dot = 0; \
+    scanf("%lg", &dot); \
+    printf("С какой точностью?\n"); \
+    size_t accuracy = 0; \
+    scanf("%zu", &accuracy);
+
+#define INIT_FILENAMES \
+    const char* func_filename = "function_data.txt"; \
+    const char* drvt_filename = "derivative_data.txt"; \
+    const char* tayl_filename = "taylor_srs_data.txt";
+
+#define GET_FULL_FILE_PATHS \
+    char func_file_path[GP_DATA_FILENAME_LEN] = ""; \
+    char drvt_file_path[GP_DATA_FILENAME_LEN] = ""; \
+    char tayl_file_path[GP_DATA_FILENAME_LEN] = ""; \
+    BuildGPDataFilePath(func_file_path, data_foldername, func_filename); \
+    BuildGPDataFilePath(drvt_file_path, data_foldername, drvt_filename); \
+    BuildGPDataFilePath(tayl_file_path, data_foldername, tayl_filename);
+
+#define OPEN_FILES \
+    FILE* gp_file_function   = OpenDataGnuplotFile(func_file_path); \
+    FILE* gp_file_derivative = OpenDataGnuplotFile(drvt_file_path); \
+    FILE* gp_file_taylor_srs = OpenDataGnuplotFile(tayl_file_path);
+
+#define WRITE_DATA_TO_FILES \
+    AddDotToDataGnuplotFile(gp_file_function,   argument, SolveRec(tree->root)); \
+    AddDotToDataGnuplotFile(gp_file_derivative, argument, SolveRec(ARR[SIZE - accuracy - 1]->root)); \
+    AddDotToDataGnuplotFile(gp_file_taylor_srs, argument, SolveRec(ARR[SIZE - 1]->root));
+
+#define CLOSE_FILES \
+    CloseDataGnuplotFile(gp_file_function); \
+    CloseDataGnuplotFile(gp_file_derivative); \
+    CloseDataGnuplotFile(gp_file_taylor_srs);
+
+#define ADD_FUNCTIONS_TO_GNUPLOT \
+    WriteGnuplotCMD(gp_file, "plot "); \
+    AddFuncGraphGnuplot(gp_file, func_file_path, "Функция", 0xFF0000); \
+    WriteGnuplotCMD(gp_file, ", "); \
+    AddFuncGraphGnuplot(gp_file, drvt_file_path, "Производная", 0x00FF00); \
+    WriteGnuplotCMD(gp_file, ", "); \
+    AddFuncGraphGnuplot(gp_file, tayl_file_path, "ряд Тейлора", 0x0000FF); \
+    WriteGnuplotCMD(gp_file, "\n");
+
+
+void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array) {
+    GET_PARAMS;
+
+    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num);
+
+    double default_value = VarTable[var_num].value;
+
+    const char* data_foldername = "gp_data";
+    UpdateGPDataFolder(data_foldername);
+
+    INIT_FILENAMES;
+    GET_FULL_FILE_PATHS;
+    OPEN_FILES;
+
+    for (double argument = dot - 5; argument < dot + 5; argument += 0.05) {
+        VarTable[var_num].value = argument;
+
+        WRITE_DATA_TO_FILES;
+    }
+
+    CLOSE_FILES;
+
+    VarTable[var_num].value = default_value;
+
+
+    FILE* gp_file = StartGnuplot(1.5, 5, dot);
+    ADD_FUNCTIONS_TO_GNUPLOT;
+    FinishGnuplot(gp_file);
+
+    CreateGnuplotGraph("plot_script.gp");
+}
+
+#undef GET_PARAMS
+#undef INIT_FILENAMES
+#undef GET_FULL_FILE_PATHS
+#undef OPEN_FILES
+#undef WRITE_DATA_TO_FILES
+#undef CLOSE_FILES
+#undef ADD_FUNCTIONS_TO_GNUPLOT
+
+//----------------------------------------------------------------------------------
 
 static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash) {
     for (size_t curent_power = 0; curent_power < power; curent_power++) {
@@ -392,35 +512,29 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 #define aNv(var) NewVariableNode(var)
 //======================================
 
-void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy) {
-    printf("По какой переменной строить ряд?\n");
-
-    PrintVarTable();
-
-    size_t var_num = ReadVarNumber();
-
-    if (var_num == VAR_TABLE_SIZE) {
-        printf("invalid var\n");
-        return;
-    }
-
+static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num) {
     DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash);
 
     INIT_SUBTREE;
 
-    SUBT->root = CopyNode(tree->root);
-    SUBT->size = tree->size;
+    double default_value = VarTable[var_num].value;
+    VarTable[var_num].value = dot;
+
+    SUBT->root = aNn(SolveRec(tree->root));
+    SUBT->size = 1;
     SIZE++;
 
     for (size_t iter = 0; iter < accuracy; iter++) {
-        Node_t* node = CopyNode(ARR[SIZE - 1 - accuracy + iter]->root);
+        Node_t* node = aNn(SolveRec(ARR[SIZE - 1 - accuracy + iter]->root));
 
         // прибавляем (k) производную * ([var] - dot) ^ k / k!
         ARR[SIZE - 1]->root = ADD_(ARR[SIZE - 1]->root, DIV_(MUL_(node, POW_(SUB_(aNv(VarTable[var_num].name), aNn(dot)), aNn(iter + 1))), aNn(Factorial((double)(iter + 1)))));
         ARR[SIZE - 1]->size += 1 + ARR[SIZE - 1 - accuracy + iter]->size + 8;
-
+        TreePrint(ARR[SIZE - 1], "abc");
         OptimizeTree(ARR[SIZE - 1]);
     }
+
+    VarTable[var_num].value = default_value;
 
     TreePrint(ARR[SIZE - 1], "Taylor");
 }
@@ -524,13 +638,15 @@ void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array) {
     TreeDtor(eq_tree);
 
     for (size_t pos = 0; pos < calc_array->size; pos++) {
-        TreeDtor(calc_array->array[pos]);
+        if (calc_array->array[pos] != nullptr) {
+            TreeDtor(calc_array->array[pos]);
 
-        free(calc_array->array[pos]->log);
-        calc_array->array[pos]->log = nullptr;
+            free(calc_array->array[pos]->log);
+            calc_array->array[pos]->log = nullptr;
 
-        free(calc_array->array[pos]);
-        calc_array->array[pos] = nullptr;
+            free(calc_array->array[pos]);
+            calc_array->array[pos] = nullptr;
+        }
     }
 
     free(calc_array->array);

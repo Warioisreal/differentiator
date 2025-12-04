@@ -9,17 +9,17 @@ double Div(double a, double b) { return a / b; }
 
 //----------------------------------------------------------------------------------
 
-double Sin(double a)  { return sin(a * M_PI / 180); }
-double Cos(double a)  { return cos(a * M_PI / 180); }
-double Tan(double a)  { return tan(a * M_PI / 180); }
-double Ctan(double a) { return 1 / tan(a * M_PI / 180); }
+double Sin(double a)  { return sin(a); }
+double Cos(double a)  { return cos(a); }
+double Tan(double a)  { return tan(a); }
+double Ctan(double a) { return 1 / tan(a); }
 
 //----------------------------------------------------------------------------------
 
-double Arcsin(double a)  { return asin(a) * 180 / M_PI; }
-double Arccos(double a)  { return acos(a) * 180 / M_PI; }
-double Arctan(double a)  { return atan(a) * 180 / M_PI; }
-double Arcctan(double a) { return (M_PI / 2 - atan(a)) * 180 / M_PI; }
+double Arcsin(double a)  { return asin(a); }
+double Arccos(double a)  { return acos(a); }
+double Arctan(double a)  { return atan(a); }
+double Arcctan(double a) { return M_PI / 2 - atan(a); }
 
 //----------------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ double Ctanh(double a) { return 1 / tanh(a); }
 double Arcsinh(double a)  { return asinh(a); }
 double Arccosh(double a)  { return acosh(a); }
 double Arctanh(double a)  { return atanh(a); }
-double Arcctanh(double a) { return M_PI / 2 - atan(a * 180 / M_PI); }
+double Arcctanh(double a) { return M_PI / 2 - atan(a); }
 
 //----------------------------------------------------------------------------------
 

@@ -83,21 +83,24 @@ struct ExtraTrees {
     Tree_type** array = nullptr;
 };
 
+
 #define MAKE_DFR(dfr_name, calc_arr_name, arr_size) \
     CalculateTables(); \
     MAKE_TREE(dfr_name); \
     ExtraTrees calc_arr_name = {}; \
     CreateSubTreesArray(&calc_arr_name, arr_size);
 
+
 size_t CalculateStringHash(const char* src);
 void CalculateTables(void);
 
-void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy);
+void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array);
 
 double DiffSolveEquation(Tree_type* tree);
-double SolveRec(Node_t* node);
-
 void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array);
+void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array);
+
+double SolveRec(Node_t* node);
 
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
 

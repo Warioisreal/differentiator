@@ -5,7 +5,7 @@
 #include "differentiator.h"
 
 
-void OptimizeTree(Tree_type* tree);
+void OptimizeTree(Tree_type* tree, LATEX* latex);
 
 void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update);
 void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update);

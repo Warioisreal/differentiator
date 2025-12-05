@@ -4,10 +4,12 @@
 #include "gnuplot.h"
 
 #include "tree/tree_func.h"
-#include "math_func.h"
+#include "tree/latex.h"
 
+#include "math_func.h"
 #include "optimazer.h"
 #include "differentiator.h"
+
 
 
 struct Variable VarTable[VAR_TABLE_SIZE] = {
@@ -43,15 +45,17 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     {operation_type::ARCTH,  "arcth",  0},
     {operation_type::ARCCTH, "arccth", 0},
 
-    {operation_type::LOG, "log",  0},
+    {operation_type::LOG, "log_",  0},
     {operation_type::POW, "^", 0},
 
-    {operation_type::D, "d", 0}
+    {operation_type::D, "d_", 0}
 };
 
 
 #define SUBTREE(tree_number) tree##tree_number
 
+
+#ifdef LOG_TREE
 #define INIT_SUBTREE \
     SUBT = (Tree_type*)calloc(1, sizeof(Tree_type)); \
     SUBT->log = (LOG*)calloc(1, sizeof(LOG)); \
@@ -62,6 +66,13 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     TreeCtor(SUBT); \
     TreeDtorRec(&(SUBT->root), &(SUBT->size)); \
     if (calc_array->size == calc_array->capacity - 1) { ReallocSubTreesArray(calc_array); }
+#else
+#define INIT_SUBTREE \
+    SUBT = (Tree_type*)calloc(1, sizeof(Tree_type)); \
+    TreeCtor(SUBT); \
+    TreeDtorRec(&(SUBT->root), &(SUBT->size)); \
+    if (calc_array->size == calc_array->capacity - 1) { ReallocSubTreesArray(calc_array); }
+#endif
 
 
 static size_t djb2(size_t hash, size_t field);
@@ -74,8 +85,8 @@ static Node_t* CopyNode(Node_t* node);
 static void PrintVarTable();
 static size_t ReadVarNumber();
 static size_t GetVarNumber(const char* var_name);
-static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash);
-static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num);
+static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash, LATEX* latex);
+static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex);
 static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array);
 
 
@@ -214,7 +225,7 @@ double SolveRec(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array) {
+void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     printf("По какой переменной дифференцировать?\n");
 
     PrintVarTable();
@@ -234,14 +245,12 @@ void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array) {
 
     scanf("%zu", &power);
 
-    DiffDifferentiateEquation(tree, calc_array, power, var_hash);
+    TechBeginSection(latex, "Derivative");
 
-    printf("DIR_%zu_TREE_NAME: %s\n",
-        power,
-        calc_array->array[calc_array->size - 1]->log->name);
+    DiffDifferentiateEquation(tree, calc_array, power, var_hash, latex);
 }
 
-void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array) {
+void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     printf("По какой переменной строить ряд?\n");
 
     PrintVarTable();
@@ -261,7 +270,9 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array) {
     size_t accuracy = 0;
     scanf("%zu", &accuracy);
 
-    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num);
+    TechBeginSection(latex, "Taylor Series");
+
+    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
 }
 
 //=================================================================================
@@ -313,20 +324,26 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array) {
     CloseDataGnuplotFile(gp_file_derivative); \
     CloseDataGnuplotFile(gp_file_taylor_srs);
 
-#define ADD_FUNCTIONS_TO_GNUPLOT \
-    WriteGnuplotCMD(gp_file, "plot "); \
-    AddFuncGraphGnuplot(gp_file, func_file_path, "Функция", 0xFF0000); \
-    WriteGnuplotCMD(gp_file, ", "); \
-    AddFuncGraphGnuplot(gp_file, drvt_file_path, "Производная", 0x00FF00); \
-    WriteGnuplotCMD(gp_file, ", "); \
-    AddFuncGraphGnuplot(gp_file, tayl_file_path, "ряд Тейлора", 0x0000FF); \
-    WriteGnuplotCMD(gp_file, "\n");
+#define ADD_FUNCTION_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, func_file_path, "Функция", 0xFF0000);
+#define ADD_DERIVATIVE_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, drvt_file_path, "Производная", 0x00FF00);
+#define ADD_TAILOR_SRS_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, tayl_file_path, "ряд Тейлора", 0x0000FF);
 
 
-void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array) {
+void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     GET_PARAMS;
 
-    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num);
+    TechBeginSection(latex, "Функция, производная и ряд Тейлора");
+
+    char buf[1000] = {};
+    snprintf(buf, 1000,
+        "Вычисление относительно переменной %s\n"
+        "Вычисление в окрестности точки %lg\n"
+        "Вычисление с точностью %zu\n",
+        VarTable[var_num].name, dot, accuracy);
+
+    TechAppendText(latex, buf);
+
+    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
 
     double default_value = VarTable[var_num].value;
 
@@ -349,7 +366,13 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array) {
 
 
     FILE* gp_file = StartGnuplot(1.5, 5, dot);
-    ADD_FUNCTIONS_TO_GNUPLOT;
+    WriteGnuplotCMD(gp_file, "plot ");
+    ADD_FUNCTION_TO_GNUPLOT;
+    WriteGnuplotCMD(gp_file, ", ");
+    ADD_DERIVATIVE_TO_GNUPLOT;
+    WriteGnuplotCMD(gp_file, ", ");
+    ADD_TAILOR_SRS_TO_GNUPLOT;
+    WriteGnuplotCMD(gp_file, "\n");
     FinishGnuplot(gp_file);
 
     CreateGnuplotGraph("plot_script.gp");
@@ -365,9 +388,13 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array) {
 
 //----------------------------------------------------------------------------------
 
-static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash) {
+static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash, LATEX* latex) {
     for (size_t curent_power = 0; curent_power < power; curent_power++) {
         INIT_SUBTREE;
+
+        char chapter_title[128] = "";
+        snprintf(chapter_title, sizeof(chapter_title), "%zu derivative", curent_power + 1);
+        TechBeginSubsection(latex, chapter_title);
 
         if (curent_power == 0) {
             SUBT->root = DiffRec(tree->root, hash);
@@ -379,7 +406,7 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
 
         TreePrint(SUBT, "DIR");
 
-        OptimizeTree(SUBT);
+        OptimizeTree(SUBT, latex);
 
         SIZE++;
     }
@@ -391,6 +418,7 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
 #define cL CopyNode(node->left)
 #define cR CopyNode(node->right)
 #define aNn(num) NewNumberNode(num)
+#define aNv(var) NewVariableNode(var)
 #define e_  NewNumberNode(GetE())
 #define pi_ NewNumberNode(GetPi())
 #define ADD_(left, right) NewOperationNode(operation_type::ADD, left, right)
@@ -509,11 +537,11 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 
 //======================================
 #define FACT_(num) NewNumberNode()
-#define aNv(var) NewVariableNode(var)
 //======================================
 
-static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num) {
-    DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash);
+static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex) {
+    TechBeginSubsection(latex, "Taylor Series");
+    DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash, latex);
 
     INIT_SUBTREE;
 
@@ -524,6 +552,8 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
     SUBT->size = 1;
     SIZE++;
 
+    FormulaToLatex(latex, ARR[SIZE - 1]->root);
+
     for (size_t iter = 0; iter < accuracy; iter++) {
         Node_t* node = aNn(SolveRec(ARR[SIZE - 1 - accuracy + iter]->root));
 
@@ -531,7 +561,10 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
         ARR[SIZE - 1]->root = ADD_(ARR[SIZE - 1]->root, DIV_(MUL_(node, POW_(SUB_(aNv(VarTable[var_num].name), aNn(dot)), aNn(iter + 1))), aNn(Factorial((double)(iter + 1)))));
         ARR[SIZE - 1]->size += 1 + ARR[SIZE - 1 - accuracy + iter]->size + 8;
         TreePrint(ARR[SIZE - 1], "abc");
-        OptimizeTree(ARR[SIZE - 1]);
+
+        FormulaToLatex(latex, ARR[SIZE - 1]->root);
+
+        OptimizeTree(ARR[SIZE - 1], latex);
     }
 
     VarTable[var_num].value = default_value;
@@ -553,6 +586,7 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
 #undef cL
 #undef cR
 #undef aNn
+#undef aNv
 #undef e_
 #undef pi_
 #undef ADD_
@@ -634,15 +668,17 @@ static Node_t* CopyNode(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array) {
+void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex) {
     TreeDtor(eq_tree);
 
     for (size_t pos = 0; pos < calc_array->size; pos++) {
         if (calc_array->array[pos] != nullptr) {
             TreeDtor(calc_array->array[pos]);
 
+            #ifdef LOG_TREE
             free(calc_array->array[pos]->log);
             calc_array->array[pos]->log = nullptr;
+            #endif
 
             free(calc_array->array[pos]);
             calc_array->array[pos] = nullptr;
@@ -651,6 +687,10 @@ void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array) {
 
     free(calc_array->array);
     calc_array->array = nullptr;
+
+    FinishLatex(latex);
+
+    LatexToPDF(latex);
 }
 
 //----------------------------------------------------------------------------------

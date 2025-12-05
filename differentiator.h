@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "tree/latex.h"
+
 
 struct Tree_type;
 struct Node_t;
@@ -84,26 +86,40 @@ struct ExtraTrees {
 };
 
 
-#define MAKE_DFR(dfr_name, calc_arr_name, arr_size) \
+#ifdef LOG_TREE
+#define MAKE_DFR(dfr_name, calc_arr_name, latex_name, arr_size) \
     CalculateTables(); \
+    UpdateLogsFolder(); \
     MAKE_TREE(dfr_name); \
+    MAKE_LATEX(latex_name); \
     ExtraTrees calc_arr_name = {}; \
     CreateSubTreesArray(&calc_arr_name, arr_size);
+#else
+#define MAKE_DFR(dfr_name, calc_arr_name, latex_name, arr_size) \
+    CalculateTables(); \
+    MAKE_TREE(dfr_name); \
+    MAKE_LATEX(latex_name); \
+    ExtraTrees calc_arr_name = {}; \
+    CreateSubTreesArray(&calc_arr_name, arr_size);
+#endif
+
+
+
 
 
 size_t CalculateStringHash(const char* src);
 void CalculateTables(void);
 
-void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array);
+void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
 
 double DiffSolveEquation(Tree_type* tree);
-void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array);
-void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array);
+void DiffUserFindDerivative(Tree_type* tree,     ExtraTrees* calc_array, LATEX* latex);
+void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
 
 double SolveRec(Node_t* node);
 
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
 
-void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array);
+void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex);
 
 #endif //_DIFFERENTIATOR_H_

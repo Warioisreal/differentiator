@@ -1,4 +1,6 @@
 #include "../differentiator.h"
+#include "tree.h"
+
 
 #include "latex.h"
 
@@ -11,33 +13,116 @@ static bool NeedsParentheses(Node_t* node, Node_t* parent);
 static int GetPriority(operation_type op);
 
 
-void StartLatex(FILE* file_latex) {
-    fprintf(file_latex,
+void TechInit(LATEX* latex) {
+    char filename[LATEX_FILE_NAME_SIZE] = "";
+    snprintf(filename, LATEX_FILE_NAME_SIZE, "%s.tex", latex->name);
+    FILE* file = fopen(filename, "wb");
+
+    if (file == nullptr) {
+        printf("LATEX FILE: %s OPEN ERROR\n", filename);
+        return;
+    }
+
+    latex->file_latex = file;
+
+    StartLatex(latex);
+}
+
+
+void StartLatex(LATEX* latex) {
+    fprintf(latex->file_latex,
         "\\documentclass{article}\n"
         "\\usepackage{amsmath}\n"
-        "\\begin{document}\n"
-        "\\begin{align*}\n");
+        "\\usepackage{mathtools}\n"
+        "\\usepackage{amsfonts}\n"
+        "\\usepackage{breqn}\n"
+
+        "\\usepackage[utf8]{inputenc}\n"
+        "\\usepackage[T2A]{fontenc}\n"
+        "\\usepackage[russian]{babel}\n"
+        "\\usepackage{microtype}\n"
+
+        "\\begin{document}\n");
 }
 
 //----------------------------------------------------------------------------------
 
-void FinishLatex(FILE* file_latex) {
-    fprintf(file_latex,
-        "\\end{align*}\n"
+void FinishLatex(LATEX* latex) {
+    fprintf(latex->file_latex,
         "\\end{document}\n");
-    fclose(file_latex);
+
+    fclose(latex->file_latex);
 }
 
 //----------------------------------------------------------------------------------
 
-char* TreeToLatex(Node_t* node) {
-    char* result = (char*)calloc(LATEX_EXPRESSION_SIZE, sizeof(char));
+void FormulaToLatex(LATEX* latex, Node_t* node) {
+    char* buffer = (char*)calloc(LATEX_EXPRESSION_SIZE, sizeof(char));
     size_t pos = 0;
 
-    LatexRecursive(node, result, &pos);
-    result[pos] = '\0';
+    LatexRecursive(node, buffer, &pos);
+    buffer[pos] = '\0';
 
-    return result;
+    /* Use align* with displaystyle so expressions are large and aligned nicely
+       This makes step-by-step equations more readable in the resulting PDF. */
+    fprintf(latex->file_latex,
+        "\\begin{align*}\n\\displaystyle %s\\\n\\end{align*}\n\n",
+        buffer);
+
+    free(buffer);
+    buffer = nullptr;
+}
+
+//----------------------------------------------------------------------------------
+
+void TechBeginSection(LATEX* latex, const char* title) {
+    fprintf(latex->file_latex, "\\section*{%s}\n\n", title);
+}
+
+void TechBeginSubsection(LATEX* latex, const char* title) {
+    fprintf(latex->file_latex, "\\subsection*{%s}\n\n", title);
+}
+
+void TechAppendText(LATEX* latex, const char* text) {
+    /* Write a small, bolded description for a step/action, followed by a
+       little vertical space to separate from formulas. */
+    fprintf(latex->file_latex, "\\noindent\\textbf{%s}\\\\[6pt]\\n", text);
+}
+
+void TechAppendCommand(LATEX* latex, const char* command) {
+    fprintf(latex->file_latex, "%s", command);
+}
+
+//----------------------------------------------------------------------------------
+
+void TechBeginEquationBlock(LATEX* latex) {
+    fprintf(latex->file_latex, "\\begin{align*}\n");
+}
+
+void TechAppendEquationStep(LATEX* latex, Node_t* left, Node_t* right, const char* comment) {
+    if (latex == nullptr || latex->file_latex == nullptr) return;
+
+    char left_buf[LATEX_EXPRESSION_SIZE] = {0};
+    char right_buf[LATEX_EXPRESSION_SIZE] = {0};
+    size_t lpos = 0, rpos = 0;
+
+    LatexRecursive(left, left_buf, &lpos);
+    left_buf[lpos] = '\0';
+
+    LatexRecursive(right, right_buf, &rpos);
+    right_buf[rpos] = '\0';
+
+    if (comment != nullptr && comment[0] != '\0') {
+        fprintf(latex->file_latex, "\\displaystyle %s & = %s \\quad \\text{\\small %s}\\\\n",
+                left_buf, right_buf, comment);
+    }
+    else {
+        fprintf(latex->file_latex, "\\displaystyle %s & = %s \\\\n+", left_buf, right_buf);
+    }
+}
+
+void TechEndEquationBlock(LATEX* latex) {
+    fprintf(latex->file_latex, "\\end{align*}\n\n");
 }
 
 //----------------------------------------------------------------------------------
@@ -66,14 +151,6 @@ static bool NeedsParentheses(Node_t* node, Node_t* parent) {
 
 static int GetPriority(operation_type op) {
     switch (op) {
-        case operation_type::POW:
-            return 4;
-        case operation_type::MUL:
-        case operation_type::DIV:
-            return 3;
-        case operation_type::ADD:
-        case operation_type::SUB:
-            return 2;
         case operation_type::SIN:
         case operation_type::COS:
         case operation_type::TAN:
@@ -92,7 +169,15 @@ static int GetPriority(operation_type op) {
         case operation_type::ARCCTH:
         case operation_type::LOG:
         case operation_type::D:
-            return 1;
+            return 5;
+        case operation_type::POW:
+            return 4;
+        case operation_type::MUL:
+        case operation_type::DIV:
+            return 3;
+        case operation_type::ADD:
+        case operation_type::SUB:
+            return 2;
         case operation_type::DEFAULT:
             return 0;
         default:
@@ -277,4 +362,17 @@ static void LatexRecursive(Node_t* node, char* buffer, size_t* pos) {
         // Форматируем числа для LaTeX
         *pos += (size_t)snprintf(buffer + *pos, LATEX_EXPRESSION_SIZE - *pos, "%.5lg", node->value.number);
     }
+}
+
+//----------------------------------------------------------------------------------
+
+void LatexToPDF(LATEX* latex) {
+    char command[LATEX_COMMAND_SIZE] = "";
+    const char* quite_mode_flag = "-interaction=batchmode";
+    snprintf(command, LATEX_COMMAND_SIZE, "pdflatex %s %s", quite_mode_flag, latex->name);
+    system(command);
+    snprintf(command, LATEX_COMMAND_SIZE, "rm %s.aux", latex->name);
+    system(command);
+    snprintf(command, LATEX_COMMAND_SIZE, "rm %s.log", latex->name);
+    system(command);
 }

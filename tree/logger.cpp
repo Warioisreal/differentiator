@@ -1,20 +1,29 @@
+#include <string.h>
+
 #include "logger.h"
 
 
 static void GoLogRec(Node_t* node, FILE* file_dot);
 
 void GetFullFolderName(const char* list_name, char* buffer) {
-    const char* folder_name = LOG_FOLDER;
-    snprintf(buffer, LOG_FOLDER_NAME_SIZE, "%s_%s", folder_name, list_name);
+    snprintf(buffer, LOG_FOLDER_NAME_SIZE, "%s/%s_%s", LOGS_DIR, LOG_FOLDER_PREFIX, list_name);
 }
 
 //----------------------------------------------------------------------------------
 
+void UpdateLogsFolder() {
+    char command[COMMAND_SIZE] = "";
+    snprintf(command, COMMAND_SIZE, "rm -rf %s", LOGS_DIR);
+    system(command);
+    snprintf(command, COMMAND_SIZE, "mkdir -p %s", LOGS_DIR);
+    system(command);
+}
+
 void UpdateFolder(const char* name_folder) {
     char command[COMMAND_SIZE] = "";
-    snprintf(command, LOG_FOLDER_NAME_SIZE, "rm -r %s", name_folder);
+    snprintf(command, COMMAND_SIZE, "rm -rf %s", name_folder);
     system(command);
-    snprintf(command, LOG_FOLDER_NAME_SIZE, "mkdir %s", name_folder);
+    snprintf(command, COMMAND_SIZE, "mkdir -p %s", name_folder);
     system(command);
 }
 
@@ -22,7 +31,7 @@ void UpdateFolder(const char* name_folder) {
 
 void StartLog(FILE** file, const char* list_name) {
     char filename[LOG_FILE_NAME_SIZE] = "";
-    snprintf(filename, LOG_FOLDER_NAME_SIZE, "%s_%s.htm", DUMP_FILENAME, list_name);
+    snprintf(filename, LOG_FILE_NAME_SIZE, "%s/%s_%s.htm", LOGS_DIR, DUMP_PREFIX, list_name);
     *file = fopen(filename, "wb");
 }
 
@@ -37,7 +46,7 @@ void FinishLog(FILE** file) {
 
 void GoLog(Node_t* root, size_t size, Node_t* node, const char* message, LOG* log) {
     char filename_dot[DOT_FILE_NAME_SIZE] = "";
-    snprintf(filename_dot, DOT_FILE_NAME_SIZE, "%s_%s/dot_%s_%zu.txt", LOG_FOLDER, log->name, log->name, log->dump_count);
+    snprintf(filename_dot, DOT_FILE_NAME_SIZE, "%s/%s_%s/dot_%s_%zu.txt", LOGS_DIR, LOG_FOLDER_PREFIX, log->name, log->name, log->dump_count);
     FILE* file_dot = fopen(filename_dot, "wb");
     StartDot(file_dot);
 
@@ -46,7 +55,18 @@ void GoLog(Node_t* root, size_t size, Node_t* node, const char* message, LOG* lo
     FinishDot(file_dot);
 
     char command[COMMAND_SIZE] = "";
-    snprintf(command, COMMAND_SIZE, "dot -Tsvg %s_%s/dot_%s_%zu.txt -o %s_%s/dot_%s_%zu.svg", LOG_FOLDER, log->name, log->name, log->dump_count, LOG_FOLDER, log->name, log->name, log->dump_count);
+    snprintf(command, COMMAND_SIZE,
+        "dot -Tsvg %s/%s_%s/dot_%s_%zu.txt -o %s/%s_%s/dot_%s_%zu.svg",
+        LOGS_DIR,
+        LOG_FOLDER_PREFIX,
+        log->name,
+        log->name,
+        log->dump_count,
+        LOGS_DIR,
+        LOG_FOLDER_PREFIX,
+        log->name,
+        log->name,
+        log->dump_count);
     system(command);
 
     fprintf(log->file_log,
@@ -85,7 +105,7 @@ void GoLog(Node_t* root, size_t size, Node_t* node, const char* message, LOG* lo
         (size_t)root,
         size,
         log->name,
-        LOG_FOLDER,
+        LOG_FOLDER_PREFIX,
         log->name,
         log->name,
         log->dump_count++,

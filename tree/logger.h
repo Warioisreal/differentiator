@@ -7,13 +7,14 @@
 #include "tree.h"
 
 
-static const char* LOG_FOLDER = "log_folder";
+static const char* LOGS_DIR = "logs";
+static const char* LOG_FOLDER_PREFIX = "log_folder";
 static const size_t LOG_FOLDER_NAME_SIZE = 100;
 
-static const char* DUMP_FILENAME = "dump";
+static const char* DUMP_PREFIX = "dump";
 static const size_t LOG_FILE_NAME_SIZE = 100;
 
-static const size_t COMMAND_SIZE = 100;
+static const size_t COMMAND_SIZE = 1000;
 
 static const size_t LOG_MESSAGE_SIZE = 100;
 
@@ -26,6 +27,7 @@ struct LOG {
 
 
 void GetFullFolderName(const char* list_name, char* buffer);
+void UpdateLogsFolder();
 void UpdateFolder(const char* name_folder);
 void StartLog(FILE** file, const char* list_name);
 void FinishLog(FILE** file);

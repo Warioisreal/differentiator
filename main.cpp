@@ -7,26 +7,15 @@
 #include "gnuplot.h"
 
 int main(void) {
-    MAKE_DFR(dfr_tree, calc_trees_array, 8);
+    MAKE_DFR(dfr_tree, calc_trees_array, dfr_tex, 8);
 
-    TreeReadDB("input.txt", &dfr_tree);
+    TreeReadDB("input.txt", &dfr_tree, &dfr_tex);
 
-    OptimizeTree(&dfr_tree);
+    OptimizeTree(&dfr_tree, &dfr_tex);
 
-    MakeFuncGraphs(&dfr_tree, &calc_trees_array);
+    MakeFuncGraphs(&dfr_tree, &calc_trees_array, &dfr_tex);
 
-
-
-//     char* latex_formula = TreeToLatex(calc_trees_array.array[0]->root);
-//
-//     FILE* latex_file = fopen("formula.tex", "w");
-//     StartLatex(latex_file);
-//     fprintf(latex_file, "%s\n", latex_formula);
-//     FinishLatex(latex_file);
-//     free(latex_formula);
-
-
-    DiffDtor(&dfr_tree, &calc_trees_array);
+    DiffDtor(&dfr_tree, &calc_trees_array, &dfr_tex);
 
     return 0;
 }

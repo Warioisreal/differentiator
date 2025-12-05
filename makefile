@@ -30,6 +30,9 @@ STACK_LIB = stack_lib.a
 
 all: tree $(EXECUTABLE)
 
+log: CFLAGS += -DLOG_TREE
+log: all
+
 tree: stack $(TREE_LIB)
 
 $(TREE_LIB): $(TREE_OBJECTS)

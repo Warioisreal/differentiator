@@ -5,6 +5,7 @@
 
 
 tree_return_t TreeCtor(Tree_type* tree) {
+    #ifdef LOG_TREE
     FILE* log_file_ = nullptr;
     StartLog(&log_file_, tree->log->name);
     if (log_file_ == nullptr) {
@@ -13,6 +14,7 @@ tree_return_t TreeCtor(Tree_type* tree) {
     }
     tree->log->file_log   = log_file_;
     tree->log->dump_count = 1;
+    #endif
 
     union ValueData value;
     value.operation = operation_type::DEFAULT;
@@ -34,9 +36,9 @@ tree_return_t TreeDtor(Tree_type* tree) {
     //TREE_VERIFY_AND_RETURN(tree, tree->root, false, "ERROR IN Dtor");
 
     TreePrint(tree, "Dtor");
-
+    #ifdef LOG_TREE
     FinishLog(&(tree->log->file_log));
-
+    #endif
     return TreeDtorRec(&(tree->root), &(tree->size));
 }
 
@@ -77,9 +79,11 @@ void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return
     if (error != tree_return_t::TREE_OK) {
         PRINT_COLOR(CYAN, "\n============TREE DUMP=============\n");
         PRINT_COLOR_VAR(RED, "ERROR: %s\n", TreeErrorsArray[static_cast <int>(error)]);
+    } else {
+        #ifdef LOG_TREE
+        GoLog(tree->root, tree->size, node, message, tree->log);
+        #endif
     }
-
-    GoLog(tree->root, tree->size, node, message, tree->log);
     /*switch(error) {
         case tree_return_t::TREE_OK:
         case tree_return_t::INVALID_ANSWER:

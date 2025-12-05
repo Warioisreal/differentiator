@@ -1,2 +1,1 @@
-(sin (x nil nil)
-)
+log_(2.71)(1 + x)$

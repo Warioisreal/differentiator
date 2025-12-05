@@ -1,15 +1,24 @@
+#include <string.h>
+
 #include "checkers.h"
 
 #include "tree_DB_func.h"
 
 
 static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int* position);
-static Node_t* TreeReadDBRec(Tree_type* tree, char* buffer, int* position);
-static char* ReadData(char* buffer, int* count, int* position);
 
-static void SkipSpaces(char* buffer, int* position);
+static Node_t* GetExpression(const char** s);
+static Node_t* GetAddition(const char** s);
+static Node_t* GetMultiplication(const char** s);
+static Node_t* GetPower(const char** s);
+static Node_t* GetMathFunc(const char** s, Node_t* var_node);
+static Node_t* GetP(const char** s);
+static Node_t* GetNumber(const char** s);
+static Node_t* GetVariable(const char** s);
 
-tree_return_t TreeMakeDB(const char* filename, Tree_type* tree) {
+static void SkipSpaces(const char** s);
+
+tree_return_t TreeMakeDB(const char* filename, Tree_type* tree, LATEX* latex) {
     //TREE_VERIFY_AND_RETURN(tree, tree->root, true, "ERROR BEFORE MakeDB");
 
     FILE* file = fopen(filename, "wb");
@@ -100,20 +109,21 @@ static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int*
 
 //----------------------------------------------------------------------------------
 
-tree_return_t TreeReadDB(const char* filename, Tree_type* tree) {
+tree_return_t TreeReadDB(const char* filename, Tree_type* tree, LATEX* latex) {
     char buffer[MAX_BUFFER_DB_SIZE] = "";
 
     FILE* file = fopen(filename, "rb");
     fread(buffer, sizeof(char), MAX_BUFFER_DB_SIZE, file);
     fclose(file);
 
-    int position = 0;
-
     TreeDtorRec(&(tree->root), &(tree->size));
 
     tree->size = 0;
 
-    Node_t* node = TreeReadDBRec(tree, buffer, &position);
+    const char* s = buffer;
+
+    Node_t* node = GetExpression(&s);
+
     if (node == nullptr) {
         TreeDump(tree, "DB READ CREATE ROOT ERROR", tree_return_t::INVALID_ROOT);
         return tree_return_t::INVALID_ROOT;
@@ -122,6 +132,11 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree) {
 
     //TREE_VERIFY_AND_RETURN(tree, tree->root, true, "ERROR AFTER ReadDB");
 
+    TreeCountNodes(tree->root, &(tree->size));
+
+    TechBeginSection(latex, "Прочитанное уравнение");
+    FormulaToLatex(latex, tree->root);
+
     TreePrint(tree, "DUMP DB TREE");
 
     SubTreeFillGrey(tree->root);
@@ -129,63 +144,247 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree) {
     return tree_return_t::TREE_OK;
 }
 
-static Node_t* TreeReadDBRec(Tree_type* tree, char* buffer, int* position) {
-    if (buffer[*position] == '(') {
-        (*position)++; // skip (
-        if(isspace(buffer[*position]) == true) { SkipSpaces(buffer, position); }
+static Node_t* GetExpression(const char** s) {
+    SkipSpaces(s);
 
-        int count = 0;
-        Node_t* node = nullptr;
-        union ValueData value;
-        const char* read_value = ReadData(buffer, &count, position);
+    Node_t* node = GetAddition(s);
 
-        if (IsDouble(read_value) == true) {
-            value.number = atof(read_value);
-            node = MakeTreeElement(node_type::NUMBER, value);
-        } else {
-            size_t read_value_hash = CalculateStringHash(read_value);
-            if (IsVariable(read_value_hash) == true) {
-                value.variable = read_value;
-                node = MakeTreeElement(node_type::VARIABLE, value);
-            } else {
-                operation_type opr = GetTypeOperation(read_value_hash);
-                if (opr != operation_type::DEFAULT) {
-                    value.operation = opr;
-                    node = MakeTreeElement(node_type::OPERATION, value);
-                }
-            }
-        }
-        tree->size++;
-        *position += count + 1;
-        if(isspace(buffer[*position]) == true) { SkipSpaces(buffer, position); }
-        node->left  = TreeReadDBRec(tree, buffer, position);
-        if(isspace(buffer[*position]) == true) { SkipSpaces(buffer, position); }
-        node->right = TreeReadDBRec(tree, buffer, position);
-        if(isspace(buffer[*position]) == true) { SkipSpaces(buffer, position); }
-        (*position)++; // skip )
-        if(isspace(buffer[*position]) == true) { SkipSpaces(buffer, position); }
+    SkipSpaces(s);
 
-        node->hash = CalculateNodeHash(node);
-        return node;
-    }
-    if (buffer[*position] == 'n') {
-        *position += 3;
-        return nullptr;
-    }
-    return nullptr;
+    if (**s != '$') { return nullptr; }
+    (*s)++;
+
+    return node;
 }
 
-static char* ReadData(char* buffer, int* count, int* position) {
-    sscanf(buffer + *position, "%*s%n", count);
-    *(buffer + *position + *count) = '\0';
-    return buffer + *position;
+static Node_t* GetAddition(const char** s) {
+    SkipSpaces(s);
+    Node_t* node = GetMultiplication(s);
+    SkipSpaces(s);
 
+    while (**s == '+' || **s == '-') {
+        char sign = **s;
+        (*s)++;
+        SkipSpaces(s);
+        Node_t* node2 = GetMultiplication(s);
+        SkipSpaces(s);
+
+        union ValueData value;
+
+        if (sign == '+') {
+            value.operation = operation_type::ADD;
+        } else {
+            value.operation = operation_type::SUB;
+        }
+        Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+        new_node->left  = node;
+        new_node->right = node2;
+
+        node = new_node;
+    }
+
+    return node;
+}
+
+static Node_t* GetMultiplication(const char** s) {
+    SkipSpaces(s);
+    Node_t* node = GetPower(s);
+    SkipSpaces(s);
+
+    while (**s == '*' || **s == '/') {
+        char sign = **s;
+        (*s)++;
+        SkipSpaces(s);
+        Node_t* node2 = GetPower(s);
+        SkipSpaces(s);
+
+        union ValueData value;
+
+        if (sign == '*') {
+            value.operation = operation_type::MUL;
+        } else {
+            value.operation = operation_type::DIV;
+        }
+        Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+        new_node->left  = node;
+        new_node->right = node2;
+
+        node = new_node;
+    }
+
+    return node;
+}
+
+static Node_t* GetPower(const char** s) {
+    SkipSpaces(s);
+    Node_t* node = GetP(s);
+    SkipSpaces(s);
+
+    while (**s == '^') {
+        (*s)++;
+        SkipSpaces(s);
+        Node_t* node2 = GetP(s);
+        SkipSpaces(s);
+
+        union ValueData value;
+        value.operation = operation_type::POW;
+
+        Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+        new_node->left  = node;
+        new_node->right = node2;
+
+        node = new_node;
+        SkipSpaces(s);
+    }
+
+    return node;
+}
+
+static Node_t* GetP(const char** s) {
+    if (**s == '(') {
+        (*s)++;
+        SkipSpaces(s);
+        Node_t* node = GetAddition(s);
+        SkipSpaces(s);
+        if (**s == ')') {
+            (*s)++;
+            return node;
+        } else {
+            return nullptr;
+        }
+    } else if (isdigit(**s) || (**s == '-' && isdigit(*(*s + 1))) || (**s == '.' && isdigit(*(*s + 1)))) {
+        SkipSpaces(s);
+        return GetNumber(s);
+    } else if (isalpha(**s) || **s == '_') {
+        SkipSpaces(s);
+        Node_t* var_node = GetVariable(s);
+        SkipSpaces(s);
+
+        // Это функция
+        if (**s == '(') {
+            SkipSpaces(s);
+            Node_t* func_node = GetMathFunc(s, var_node);
+            SkipSpaces(s);
+
+            return func_node;
+        }
+
+        // Это переменная
+        return var_node;
+    } else {
+        return nullptr;
+    }
+}
+
+static Node_t* GetNumber(const char** s) {
+    char number_str[100] = "";
+    int index = 0;
+
+    double number_value = 1;
+
+    if (**s == '-' && '0' <= *(1 + *s) && *(1 + *s) <= '9') {
+        number_value = -1;
+        (*s)++;
+    }
+
+    while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
+
+    if (**s == '.') {
+        number_str[index++] = *(*s)++;
+
+        while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
+    }
+
+    SkipSpaces(s);
+
+    number_str[index] = '\0';
+
+    number_value *= atof(number_str);
+
+    union ValueData value;
+    value.number = number_value;
+    Node_t* node = MakeTreeElement(node_type::NUMBER, value);
+    return node;
+}
+
+static Node_t* GetVariable(const char** s) {
+    SkipSpaces(s);
+
+    if (!(isalpha(**s) || **s == '_')) { return nullptr; }
+
+    char var_name[10] = "";
+    int index = 0;
+
+    while (isalpha(**s) || isdigit(**s) || **s == '_') {
+        var_name[index++] = *(*s)++;
+    }
+    var_name[index] = '\0';
+
+    SkipSpaces(s);
+
+    union ValueData value;
+    value.variable = strdup(var_name); // возможны утечки по памяти
+    // было бы хорошо тут записывать массив переменных
+
+    Node_t* node = MakeTreeElement(node_type::VARIABLE, value);
+
+    return node;
+}
+
+static Node_t* GetMathFunc(const char** s, Node_t* var_node) {
+    if (var_node == nullptr || var_node->type != node_type::VARIABLE) { return nullptr; }
+
+    // Проверяем, что после имени функции идет '('
+    if (**s == '(') { (*s)++; }
+    SkipSpaces(s);
+
+    // Получаем имя функции из узла переменной
+    const char* func_name = var_node->value.variable;
+    size_t func_hash = CalculateStringHash(func_name);
+    operation_type op = GetTypeOperation(func_name, func_hash);
+
+    if (op == operation_type::DEFAULT) { return nullptr; }
+
+    union ValueData value;
+    value.operation = op;
+
+    Node_t* base = nullptr;
+
+    // Обработка для логарифма и дифференциала
+    if (op == operation_type::LOG || op == operation_type::D) {
+        // основание
+        SkipSpaces(s);
+        base = GetAddition(s);
+        SkipSpaces(s);
+
+        if (**s == ')') { (*s)++; } else { return nullptr; }
+
+        SkipSpaces(s);
+
+        // аргумент
+        if (**s == '(') { (*s)++; }
+    }
+
+    // Обычные функции с одним аргументом
+    SkipSpaces(s);
+    Node_t* arg_node = GetAddition(s);
+    SkipSpaces(s);
+
+    if (**s == ')') { (*s)++; } else { return nullptr; }
+
+    // Изменяем узел переменной на узел операции
+    var_node->type  = node_type::OPERATION;
+    var_node->value = value;
+    var_node->left  = arg_node;
+    var_node->right = base;
+
+    return var_node;
 }
 
 //----------------------------------------------------------------------------------
 
-static void SkipSpaces(char* buffer, int* position) {
-    while (isspace(buffer[*position]) == true) {
-        (*position)++;
+static void SkipSpaces(const char** s) {
+    while (isspace(**s)) {
+        (*s)++;
     }
 }

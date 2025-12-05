@@ -1,0 +1,38 @@
+digraph G{
+node[shape=Mrecord, style=filled];
+rankdir=TB;
+ordering=out;
+node104A9B570 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B570 | value = + | {<left> 104A999D0 | <right> 104A9B530}}"];
+node104A9B570: <left> -> node104A999D0 [color="#ff0000"];
+node104A999D0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A999D0 | value = sin | {<left> 104A9B320 | <right> 0}}"];
+node104A999D0: <left> -> node104A9B320 [color="#ff0000"];
+node104A9B320 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B320 | value = + | {<left> 104A9B2A0 | <right> 104A9B2E0}}"];
+node104A9B320: <left> -> node104A9B2A0 [color="#ff0000"];
+node104A9B2A0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B2A0 | value = * | {<left> 104A99A50 | <right> 104A9B260}}"];
+node104A9B2A0: <left> -> node104A99A50 [color="#ff0000"];
+node104A99A50 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A99A50 | value = 15 | {<left> 0 | <right> 0}}"];
+node104A9B2A0: <right> -> node104A9B260 [color="#0000ff"];
+node104A9B260 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B260 | value = ^ | {<left> 104A99AA0 | <right> 104A9B220}}"];
+node104A9B260: <left> -> node104A99AA0 [color="#ff0000"];
+node104A99AA0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A99AA0 | value = x | {<left> 0 | <right> 0}}"];
+node104A9B260: <right> -> node104A9B220 [color="#0000ff"];
+node104A9B220 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B220 | value = 3 | {<left> 0 | <right> 0}}"];
+node104A9B320: <right> -> node104A9B2E0 [color="#0000ff"];
+node104A9B2E0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B2E0 | value = 5 | {<left> 0 | <right> 0}}"];
+node104A9B570: <right> -> node104A9B530 [color="#0000ff"];
+node104A9B530 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B530 | value = ^ | {<left> 104A9B360 | <right> 104A9B4F0}}"];
+node104A9B530: <left> -> node104A9B360 [color="#ff0000"];
+node104A9B360 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B360 | value = cos | {<left> 104A9B4B0 | <right> 0}}"];
+node104A9B360: <left> -> node104A9B4B0 [color="#ff0000"];
+node104A9B4B0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B4B0 | value = + | {<left> 104A9B430 | <right> 104A9B470}}"];
+node104A9B4B0: <left> -> node104A9B430 [color="#ff0000"];
+node104A9B430 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B430 | value = * | {<left> 104A9B3A0 | <right> 104A9B3F0}}"];
+node104A9B430: <left> -> node104A9B3A0 [color="#ff0000"];
+node104A9B3A0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B3A0 | value = 20 | {<left> 0 | <right> 0}}"];
+node104A9B430: <right> -> node104A9B3F0 [color="#0000ff"];
+node104A9B3F0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B3F0 | value = x | {<left> 0 | <right> 0}}"];
+node104A9B4B0: <right> -> node104A9B470 [color="#0000ff"];
+node104A9B470 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B470 | value = 7 | {<left> 0 | <right> 0}}"];
+node104A9B530: <right> -> node104A9B4F0 [color="#0000ff"];
+node104A9B4F0 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 104A9B4F0 | value = 3 | {<left> 0 | <right> 0}}"];
+}

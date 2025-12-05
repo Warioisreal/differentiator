@@ -1,5 +1,6 @@
 #include "tree/tree_func.h"
 #include "tree/checkers.h"
+#include "tree/latex.h"
 
 #include "optimazer.h"
 
@@ -7,13 +8,24 @@
 static void ReplaceParentOnChild(Node_t** parent, Node_t* child);
 
 
-void OptimizeTree(Tree_type* tree) {
+void OptimizeTree(Tree_type* tree, LATEX* latex) {
+    TechBeginSubsection(latex, "Упрощение уравнения");
+    FormulaToLatex(latex, tree->root);
+
     bool is_update = true;
     while (is_update == true) {
         is_update = false;
         OptimizeConstantElements(tree, &tree->root, &is_update);
+
+        TechAppendText(latex, "Свертка констант");
+        FormulaToLatex(latex, tree->root);
+
         DeleteNeutralElements(tree, &tree->root, &is_update);
+
+        TechAppendText(latex, "Удаление нейтральных элементов");
+        FormulaToLatex(latex, tree->root);
     }
+    FormulaToLatex(latex, tree->root);
 
     TreePrint(tree, "Optimize tree");
 

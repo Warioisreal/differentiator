@@ -13,10 +13,13 @@
 struct Tree_type {
     Node_t* root = nullptr;
     size_t size = 0;
+    #ifdef LOG_TREE
     LOG* log = nullptr;
+    #endif
     LATEX* latex = nullptr;
 };
 
+#ifdef LOG_TREE
 #define MAKE_LOG(tree_name, log_name) \
     LOG log_name = {}; \
     tree_name.log = &(log_name); \
@@ -29,7 +32,11 @@ struct Tree_type {
     GetFullFolderName(#tree_name, full_folder_name); \
     UpdateFolder(full_folder_name); \
     TreeCtor(&tree_name)
-
+#else
+#define MAKE_TREE(tree_name) \
+    Tree_type tree_name = {}; \
+    TreeCtor(&tree_name)
+#endif
 
 #define CHECK_ERROR_AND_RETURN(tree, message, ret, result) if (ret != result) { TreeDump(tree, message, ret); return ret; }
 

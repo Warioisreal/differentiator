@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "checkers.h"
 
 
@@ -22,9 +24,13 @@ bool IsVariable(size_t hash) {
 
 //----------------------------------------------------------------------------------
 
-operation_type GetTypeOperation(size_t hash) {
+operation_type GetTypeOperation(const char* name, size_t hash) {
     for (size_t pos = 0; pos < OPR_TABLE_SIZE; pos++) {
-        if (OprTable[pos].hash == hash) { return OprTable[pos].type; }
+        if (OprTable[pos].hash == hash) {
+            if (strcmp(name, OprTable[pos].name) == 0) {
+                return OprTable[pos].type;
+            }
+        }
     }
 
     return operation_type::DEFAULT;

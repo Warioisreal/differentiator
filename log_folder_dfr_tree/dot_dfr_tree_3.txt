@@ -1,8 +1,0 @@
-digraph G{
-node[shape=Mrecord, style=filled];
-rankdir=TB;
-ordering=out;
-node10547DA90 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 10547DA90 | value = sin | {<left> 10547DB10 | <right> 0}}"];
-node10547DA90: <left> -> node10547DB10 [color="#ff0000"];
-node10547DB10 [color="#808080", fillcolor="#C0C0C0", penwidth="2", label="{addr = 10547DB10 | value = x | {<left> 0 | <right> 0}}"];
-}

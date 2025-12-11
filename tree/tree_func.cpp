@@ -79,104 +79,176 @@ void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return
     if (error != tree_return_t::TREE_OK) {
         PRINT_COLOR(CYAN, "\n============TREE DUMP=============\n");
         PRINT_COLOR_VAR(RED, "ERROR: %s\n", TreeErrorsArray[static_cast <int>(error)]);
-    } else {
-        #ifdef LOG_TREE
-        GoLog(tree->root, tree->size, node, message, tree->log);
-        #endif
+        PRINT_COLOR_VAR(RED, "message: %s\n", message);
     }
-    tree; node; message;
-    /*switch(error) {
+    switch(error) {
         case tree_return_t::TREE_OK:
         case tree_return_t::INVALID_ANSWER:
         case tree_return_t::INCORRECT_ANSW:
+            #ifdef LOG_TREE
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_SIZE:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(RED, " %10zu ", tree->size);
             printf("|");
+            #ifdef LOG_TREE
             PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
+            #endif
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_LOG:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zu ", tree->size);
             printf("|");
-            PRINT_COLOR_VAR(RED, " %9zX ", (size_t)tree->log);
+            #ifdef LOG_TREE
+            PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
+            #endif
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_ROOT:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(RED, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zu ", tree->size);
             printf("|");
+            #ifdef LOG_TREE
             PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
+            #endif
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::ADD_ELEMENT:
         case tree_return_t::DELETE_SUBTREE:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ | ______UPD NODE______ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ | ______UPD NODE______ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zu ", tree->size);
             printf("|");
+            #ifdef LOG_TREE
             PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
-            PRINT_COLOR_VAR(YELLOW, " %20s ", node->value);
+            #endif
+            switch (node->type) {
+                case node_type::DEFAULT:
+                case node_type::OPERATION:
+                    PRINT_COLOR_VAR(YELLOW, " %20s ", OprTable[(int)(node->value.operation)].name);
+                    break;
+                case node_type::VARIABLE:
+                    PRINT_COLOR_VAR(YELLOW, " %20s ", node->value.variable);
+                    break;
+                case node_type::NUMBER:
+                    PRINT_COLOR_VAR(YELLOW, " %20lg ", node->value.number);
+                    break;
+                default: PRINT_COLOR(RED, "unknown node_type\n");
+
+            };
             printf("|");
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_CHILDS:
         case tree_return_t::INVALID_HASH:
         case tree_return_t::INVALID_VALUE:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ | ___INCORRECT NODE___ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ | ___INCORRECT NODE___ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zu ", tree->size);
             printf("|");
+            #ifdef LOG_TREE
             PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
-            PRINT_COLOR_VAR(RED, " %20s ", node->value);
+            #endif
+            switch (node->type) {
+                case node_type::DEFAULT:
+                case node_type::OPERATION:
+                    PRINT_COLOR_VAR(YELLOW, " %20s ", OprTable[(int)(node->value.operation)].name);
+                    break;
+                case node_type::VARIABLE:
+                    PRINT_COLOR_VAR(YELLOW, " %20s ", node->value.variable);
+                    break;
+                case node_type::NUMBER:
+                    PRINT_COLOR_VAR(YELLOW, " %20lg ", node->value.number);
+                    break;
+                default: PRINT_COLOR(RED, "unknown node_type\n");
+
+            };
             printf("|");
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_NODE:
+            #ifdef LOG_TREE
             printf("| ___ROOT___ | ___SIZE___ | ___LOG___ | ___INCORRECT NODE___ |\n");
+            #else
+            printf("| ___ROOT___ | ___SIZE___ | ___INCORRECT NODE___ |\n");
+            #endif
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zX ", (size_t)tree->root);
             printf("|");
             PRINT_COLOR_VAR(GREEN, " %10zu ", tree->size);
             printf("|");
+            #ifdef LOG_TREE
             PRINT_COLOR_VAR(GREEN, " %9zX ", (size_t)tree->log);
             printf("|");
+            #endif
             PRINT_COLOR_VAR(RED, " %10zX ", (size_t)node);
             printf("|");
             printf("\n\n");
+            #ifdef LOG_TREE
             printf("DUMP NUMBER: %zu\n", tree->log->dump_count);
             GoLog(tree->root, tree->size, node, message, tree->log);
+            #endif
             break;
         case tree_return_t::INVALID_BUFFER:
             PRINT_COLOR(RED, "Ошибка буфера в работе с BD\n");
@@ -191,7 +263,7 @@ void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return
             printf("UNKNOWN RETURN\n");
     }
 
-    */if (error != tree_return_t::TREE_OK) { PRINT_COLOR(CYAN, "==================================\n\n"); }
+    if (error != tree_return_t::TREE_OK) { PRINT_COLOR(CYAN, "==================================\n\n"); }
 }
 
 //----------------------------------------------------------------------------------
@@ -217,17 +289,10 @@ tree_return_t SubTreeVerify(Node_t* node) {
     if (node == nullptr) {
         return tree_return_t::INVALID_VALUE;
     }
-    /*if (node->value == DATA_POISON) {
-        MakeRedElem(node);
-        return tree_return_t::INVALID_VALUE;
-    }
     if (node->hash != CalculateNodeHash(node)) {
         return tree_return_t::INVALID_HASH;
     }
-    if (node->correct_childs == true && ((node->left == nullptr) != (node->right == nullptr))) {
-        MakeRedElem(node);
-        return tree_return_t::INVALID_CHILDS;
-    }*/
+
     return tree_return_t::TREE_OK;
 }
 

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "define_lib.h"
+
 #include "tree/latex.h"
 
 
@@ -19,6 +21,7 @@ const size_t VARIABLE_NAME_SIZE  = 10;
 const size_t OPERATION_NAME_SIZE = 10;
 
 const size_t MAX_DRV_NUMBER = 30;
+
 
 typedef enum class NodeTypes : char {
     DEFAULT = 0,
@@ -62,10 +65,24 @@ typedef enum class Operations : char {
     D = 23
 } operation_type;
 
+//----------------------------------------------------------------------------------
+
 typedef enum class DfrReturn : char {
     OK = 0,
-    ERROR = 1
+    ALLOC_STA_ERROR    = 1,
+    GP_FUNC_FILE_ERROR = 2,
+    GP_DRV_FILE_ERROR  = 3,
+    GP_TLR_FILE_ERROR  = 4,
+    TREE_PARAMS_ERROR  = 5,
+    TREE_DATA_ERROR    = 6,
+    GP_START_ERROR     = 7,
+    EXTRA_TREE_PTR_ERR = 8,
+    TREE_DTOR_ERROR    = 9,
+    EXT_TREE_DTOR_ERR  = 10,
+    NODE_PTR_ERROR     = 11
 } dfr_return_t;
+
+//----------------------------------------------------------------------------------
 
 struct Variable {
     char name[VARIABLE_NAME_SIZE] = "";
@@ -79,6 +96,8 @@ struct Operation {
     size_t hash = 0;
 };
 
+//----------------------------------------------------------------------------------
+
 union ParamValue {
     size_t szt;
     double dbl;
@@ -88,6 +107,8 @@ struct Params {
     const char* param_name = nullptr;
     union ParamValue param_data;
 };
+
+//----------------------------------------------------------------------------------
 
 extern struct Variable  VarTable[VAR_TABLE_SIZE];
 extern struct Params    ParamsTable[PARAMS_TABLE_SIZE];
@@ -116,22 +137,40 @@ struct ExtraTrees {
 #endif
 
 
+#define CHECK_AND_RETURN(func_ret) \
+    result = func_ret; \
+    if (result != dfr_return_t::OK) { return result; }
+
+#define DFR_VERIFY_AND_RETURN(tree, node, message) BEGIN { \
+    tree_return_t error = TreeVerify(tree); \
+    if (error != tree_return_t::TREE_OK) { \
+        SubTreeDump(tree, node, message, error); \
+        return dfr_return_t::TREE_PARAMS_ERROR; \
+    } else { \
+        error = SubTreeVerify(node); \
+        if (error != tree_return_t::TREE_OK) { \
+            SubTreeDump(tree, node, message, error); \
+            return dfr_return_t::TREE_DATA_ERROR; \
+        } \
+    } \
+} END
+
 
 size_t CalculateStringHash(const char* src);
 size_t GetVarNumber(const char* var_name);
 void CalculateTables(size_t drv_hash, size_t drv_cnt, double dot, double rngX, double rngY);
 void PrintVarTable();
 
-void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
+dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
 
 double DiffSolveEquation(Tree_type* tree);
-void DiffUserFindDerivative(Tree_type* tree,     ExtraTrees* calc_array, LATEX* latex);
-void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
+dfr_return_t DiffUserFindDerivative(Tree_type* tree,     ExtraTrees* calc_array, LATEX* latex);
+dfr_return_t DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
 
 double SolveRec(Node_t* node);
 
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size);
 
-void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex);
+dfr_return_t DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex);
 
 #endif //_DIFFERENTIATOR_H_

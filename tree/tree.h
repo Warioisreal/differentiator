@@ -63,7 +63,6 @@ static const char* TreeErrorsArray[] = {
     "INVALID_BUFFER",
     "WRITE_BUF_ERR",
     "INVALID_ROOT",
-    "EMPTY_TREE_DEL",
     "INVALID_SIZE",
     "INVALID_VALUE",
     "INVALID_HASH",

@@ -40,8 +40,8 @@ struct Tree_type {
 
 #define CHECK_ERROR_AND_RETURN(tree, message, ret, result) if (ret != result) { TreeDump(tree, message, ret); return ret; }
 
-#define TREE_VERIFY_AND_RETURN(tree, node, check_size, message) BEGIN { \
-    tree_return_t error = TreeVerify(tree, check_size); \
+#define TREE_VERIFY_AND_RETURN(tree, node, message) BEGIN { \
+    tree_return_t error = TreeVerify(tree); \
     if (error != tree_return_t::TREE_OK) { \
         SubTreeDump(tree, node, message, error); \
         return error; \
@@ -63,7 +63,7 @@ void SubTreePrint(Tree_type* tree, Node_t* node, const char* message);
 void TreeDump(Tree_type* tree, const char* message, tree_return_t error);
 void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return_t error);
 
-tree_return_t TreeVerify(Tree_type* tree, bool check_size);
+tree_return_t TreeVerify(Tree_type* tree);
 tree_return_t SubTreeVerify(Node_t* node);
 void TreeCountNodes(Node_t* node, size_t* count);
 

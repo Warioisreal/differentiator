@@ -87,8 +87,8 @@ static Node_t* NewVariableNode(char* var);
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r);
 static Node_t* NewNode(node_type node_t, union ValueData value, Node_t* node_l, Node_t* node_r);
 static Node_t* CopyNode(Node_t* node);
-static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash, LATEX* latex);
-static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex);
+static dfr_return_t DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash, LATEX* latex);
+static dfr_return_t CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex);
 static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array);
 
 
@@ -127,7 +127,7 @@ static size_t djb2(size_t hash, size_t field) {
 dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size) {
     Tree_type** array = (Tree_type**)calloc(size, sizeof(Tree_type*));
 
-    if (array == nullptr) { return dfr_return_t::ERROR; }
+    if (array == nullptr) { return dfr_return_t::ALLOC_STA_ERROR; }
 
     calc_array->size     = 0;
     calc_array->capacity = size;
@@ -139,7 +139,7 @@ dfr_return_t CreateSubTreesArray(ExtraTrees* calc_array, size_t size) {
 static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array) {
     Tree_type** array = (Tree_type**)realloc(calc_array->array, 2 * calc_array->capacity * sizeof(Tree_type*));
 
-    if (array == nullptr) { return dfr_return_t::ERROR; }
+    if (array == nullptr) { return dfr_return_t::ALLOC_STA_ERROR; }
 
     calc_array->capacity *= 2;
     calc_array->array    = array;
@@ -229,16 +229,16 @@ double SolveRec(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
+dfr_return_t DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     size_t var_hash = ParamsTable[0].param_data.szt;
     size_t power    = ParamsTable[1].param_data.szt;
 
     TechBeginSection(latex, "Мега-производная");
 
-    DiffDifferentiateEquation(tree, calc_array, power, var_hash, latex);
+    return DiffDifferentiateEquation(tree, calc_array, power, var_hash, latex);
 }
 
-void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
+dfr_return_t DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     size_t var_num = 0;
 
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
@@ -252,7 +252,7 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* 
 
     TechBeginSection(latex, "ЧАВО, РЯД ТЕЙЛОРА?!");
 
-    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
+    return CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
 }
 
 //=================================================================================
@@ -279,6 +279,11 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* 
     FILE* gp_file_derivative = OpenDataGnuplotFile(drvt_file_path); \
     FILE* gp_file_taylor_srs = OpenDataGnuplotFile(tayl_file_path);
 
+#define CHECK_FILES_AND_RETURN \
+    if (gp_file_function   == nullptr) { return dfr_return_t::GP_FUNC_FILE_ERROR; } \
+    if (gp_file_derivative == nullptr) { return dfr_return_t::GP_DRV_FILE_ERROR; } \
+    if (gp_file_taylor_srs == nullptr) { return dfr_return_t::GP_TLR_FILE_ERROR; }
+
 #define WRITE_DATA_TO_FILES \
     AddDotToDataGnuplotFile(gp_file_function,   argument, SolveRec(tree->root)); \
     AddDotToDataGnuplotFile(gp_file_derivative, argument, SolveRec(ARR[SIZE - accuracy - 1]->root)); \
@@ -294,7 +299,10 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* 
 #define ADD_TAILOR_SRS_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, tayl_file_path, "ряд Тейлора", 0x0000FF);
 
 
-void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
+dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
+    DFR_VERIFY_AND_RETURN(tree, tree->root, "error before func graphs");
+
+    dfr_return_t result = dfr_return_t::OK;
     size_t var_num = 0;
 
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
@@ -319,7 +327,7 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
 
     TechAppendText(latex, buf);
 
-    CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
+    CHECK_AND_RETURN(CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex));
 
     double default_value = VarTable[var_num].value;
 
@@ -329,6 +337,7 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     INIT_FILENAMES;
     GET_FULL_FILE_PATHS;
     OPEN_FILES;
+    CHECK_FILES_AND_RETURN;
 
     for (double argument = dot - 5; argument < dot + 5; argument += 0.05) {
         VarTable[var_num].value = argument;
@@ -340,8 +349,9 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
 
     VarTable[var_num].value = default_value;
 
-
     FILE* gp_file = StartGnuplot(ParamsTable[4].param_data.dbl, ParamsTable[3].param_data.dbl, ParamsTable[2].param_data.dbl);
+    if (gp_file == nullptr) { return dfr_return_t::GP_START_ERROR; }
+
     WriteGnuplotCMD(gp_file, "plot ");
     ADD_FUNCTION_TO_GNUPLOT;
     WriteGnuplotCMD(gp_file, ", ");
@@ -352,6 +362,8 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     FinishGnuplot(gp_file);
 
     CreateGnuplotGraph("plot_script.gp");
+
+    return dfr_return_t::OK;
 }
 
 #undef GET_PARAMS
@@ -364,7 +376,9 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
 
 //----------------------------------------------------------------------------------
 
-static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash, LATEX* latex) {
+static dfr_return_t DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t power, size_t hash, LATEX* latex) {
+    DFR_VERIFY_AND_RETURN(tree, tree->root, "error before find drv");
+    dfr_return_t result = dfr_return_t::OK;
     for (size_t curent_power = 0; curent_power < power; curent_power++) {
         INIT_SUBTREE;
 
@@ -378,6 +392,8 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
             SUBT->root = DiffRec(ARR[SIZE - 1]->root, hash);
         }
 
+        if (SUBT->root == nullptr) { return dfr_return_t::EXTRA_TREE_PTR_ERR; }
+
         TreeCountNodes(SUBT->root, &(SUBT->size));
 
         TreePrint(SUBT, "DIR");
@@ -387,10 +403,14 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
         TechAppendFormula(latex, SUBT->root);
         TechEndEquationBlock(latex);
 
-        OptimizeTree(SUBT, latex);
+        CHECK_AND_RETURN(OptimizeTree(SUBT, latex));
+
+        DFR_VERIFY_AND_RETURN(SUBT, SUBT->root, "error in drv tree");
 
         SIZE++;
     }
+
+    return dfr_return_t::OK;
 }
 
 //=================================================================================
@@ -520,9 +540,17 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 #define FACT_(num) NewNumberNode()
 //======================================
 
-static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex) {
+static dfr_return_t CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex) {
+    DFR_VERIFY_AND_RETURN(tree, tree->root, "error before calc Taylor srs");
+    dfr_return_t result = dfr_return_t::OK;
     TechBeginSubsection(latex, "Очень сложный ряд тейлора");
-    DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash, latex);
+    CHECK_AND_RETURN(
+        DiffDifferentiateEquation(
+            tree,
+            calc_array,
+            accuracy,
+            VarTable[var_num].hash,
+            latex));
 
     INIT_SUBTREE;
 
@@ -543,14 +571,13 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
 
         // прибавляем (k) производную * ([var] - dot) ^ k / k!
         ARR[SIZE - 1]->root = ADD_(ARR[SIZE - 1]->root, DIV_(MUL_(node, POW_(SUB_(aNv(VarTable[var_num].name), aNn(dot)), aNn(iter + 1))), aNn(Factorial((double)(iter + 1)))));
-        ARR[SIZE - 1]->size += 1 + ARR[SIZE - 1 - accuracy + iter]->size + 8;
-        TreePrint(ARR[SIZE - 1], "abc");
+        ARR[SIZE - 1]->size += 10; // добавляем все доп узлы с операциями
 
         TechBeginEquationBlock(latex, "");
         TechAppendFormula(latex, ARR[SIZE - 1]->root);
         TechEndEquationBlock(latex);
 
-        OptimizeTree(ARR[SIZE - 1], latex);
+        CHECK_AND_RETURN(OptimizeTree(ARR[SIZE - 1], latex));
     }
 
     char title[128] = "";
@@ -569,6 +596,10 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
     VarTable[var_num].value = default_value;
 
     TreePrint(ARR[SIZE - 1], "Taylor");
+
+    DFR_VERIFY_AND_RETURN(ARR[SIZE - 1], ARR[SIZE - 1]->root, "error after calc Taylor srs");
+
+    return dfr_return_t::OK;
 }
 
 //======================================
@@ -667,12 +698,14 @@ static Node_t* CopyNode(Node_t* node) {
 
 //----------------------------------------------------------------------------------
 
-void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex) {
-    TreeDtor(eq_tree);
+dfr_return_t DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex) {
+    if (TreeDtor(eq_tree) != tree_return_t::TREE_OK) { return dfr_return_t::TREE_DTOR_ERROR; }
 
     for (size_t pos = 0; pos < calc_array->size; pos++) {
         if (calc_array->array[pos] != nullptr) {
-            TreeDtor(calc_array->array[pos]);
+            if (TreeDtor(calc_array->array[pos]) != tree_return_t::TREE_OK) {
+                return dfr_return_t::EXT_TREE_DTOR_ERR;
+            }
 
             #ifdef LOG_TREE
             free(calc_array->array[pos]->log);
@@ -690,6 +723,8 @@ void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex) {
     FinishLatex(latex);
 
     LatexToPDF(latex);
+
+    return dfr_return_t::OK;
 }
 
 //----------------------------------------------------------------------------------

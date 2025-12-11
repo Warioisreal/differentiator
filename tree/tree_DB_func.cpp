@@ -26,7 +26,7 @@ static void SkipSpaces(const char** s);
 static double GetDouble(const char** s);
 
 tree_return_t TreeMakeDB(const char* filename, Tree_type* tree, LATEX* latex) {
-    //TREE_VERIFY_AND_RETURN(tree, tree->root, true, "ERROR BEFORE MakeDB");
+    TREE_VERIFY_AND_RETURN(tree, tree->root, "ERROR BEFORE MakeDB");
 
     FILE* file = fopen(filename, "wb");
 
@@ -56,17 +56,34 @@ tree_return_t TreeMakeDB(const char* filename, Tree_type* tree, LATEX* latex) {
     free(buffer);
     buffer = nullptr;
 
+    TechAppendText(latex,
+        "Что-то считали, что-то записали");
+    TechBeginEquationBlock(latex, "");
+    TechAppendFormula(latex, tree->root);
+    TechEndEquationBlock(latex);
+
     return res;
 }
 
 static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int* position) {
-    //CHECK_ERROR_AND_RETURN(tree, "ERROR IN TreeGetDB", SubTreeVerify(node), tree_return_t::TREE_OK);
+    CHECK_ERROR_AND_RETURN(tree, "ERROR IN TreeGetDB", SubTreeVerify(node), tree_return_t::TREE_OK);
 
     if (buffer == nullptr) {
         TreeDump(tree, "TreeGetDB INVALID BUFFER", tree_return_t::INVALID_BUFFER);
         return tree_return_t::INVALID_BUFFER;
     }
     int res = 0;
+
+    if (node->left == nullptr) {
+        res = snprintf(buffer + *position, MAX_BUFFER_DB_SIZE, "nil ");
+        if (res == 0) {
+            TreeDump(tree, "DB BUFFER WRITE ERROR", tree_return_t::WRITE_BUF_ERR);
+            return tree_return_t::WRITE_BUF_ERR;
+        }
+        *position += res;
+    } else {
+        TreeGetDB(tree, buffer, node->left, position);
+    }
 
     if (node->type == node_type::OPERATION) {
         res = snprintf(buffer + *position, MAX_BUFFER_DB_SIZE, "(\"%s\" ", node->value.operation);
@@ -84,16 +101,6 @@ static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int*
     }
     *position += res;
 
-    if (node->left == nullptr) {
-        res = snprintf(buffer + *position, MAX_BUFFER_DB_SIZE, "nil ");
-        if (res == 0) {
-            TreeDump(tree, "DB BUFFER WRITE ERROR", tree_return_t::WRITE_BUF_ERR);
-            return tree_return_t::WRITE_BUF_ERR;
-        }
-        *position += res;
-    } else {
-        TreeGetDB(tree, buffer, node->left, position);
-    }
     if (node->right == nullptr) {
         res = snprintf(buffer + *position, MAX_BUFFER_DB_SIZE, "nil");
         if (res == 0) {
@@ -136,9 +143,9 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree, LATEX* latex) {
     }
     tree->root = node;
 
-    //TREE_VERIFY_AND_RETURN(tree, tree->root, true, "ERROR AFTER ReadDB");
-
     TreeCountNodes(tree->root, &(tree->size));
+
+    TREE_VERIFY_AND_RETURN(tree, tree->root, "ERROR AFTER ReadDB");
 
     TechAppendText(latex,
         "Так, умный пользователь ввел нам выражение, "

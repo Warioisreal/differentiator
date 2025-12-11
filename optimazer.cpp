@@ -8,7 +8,10 @@
 static void ReplaceParentOnChild(Node_t** parent, Node_t* child);
 
 
-void OptimizeTree(Tree_type* tree, LATEX* latex) {
+dfr_return_t OptimizeTree(Tree_type* tree, LATEX* latex) {
+    DFR_VERIFY_AND_RETURN(tree, tree->root, "error before optimization");
+    dfr_return_t result = dfr_return_t::OK;
+
     TechBeginSubsubsection(latex, "Бесполезное упрощение уравнения");
     TechAppendText(latex, "Итак, вот с чем мы работаем:");
     TechBeginEquationBlock(latex, "");
@@ -18,13 +21,13 @@ void OptimizeTree(Tree_type* tree, LATEX* latex) {
     bool is_update = true;
     while (is_update == true) {
         is_update = false;
-        OptimizeConstantElements(tree, &tree->root, &is_update);
+        CHECK_AND_RETURN(OptimizeConstantElements(tree, &tree->root, &is_update));
 
         TechBeginEquationBlock(latex, "");
         TechAppendFormula(latex, tree->root);
         TechEndEquationBlock(latex);
 
-        DeleteNeutralElements(tree, &tree->root, &is_update);
+        CHECK_AND_RETURN(DeleteNeutralElements(tree, &tree->root, &is_update));
 
         TechBeginEquationBlock(latex, "");
         TechAppendFormula(latex, tree->root);
@@ -37,6 +40,10 @@ void OptimizeTree(Tree_type* tree, LATEX* latex) {
     TreePrint(tree, "Optimize tree");
 
     SubTreeFillGrey(tree->root);
+
+    DFR_VERIFY_AND_RETURN(tree, tree->root, "error after optimization");
+
+    return dfr_return_t::OK;
 }
 
 
@@ -59,12 +66,13 @@ void OptimizeTree(Tree_type* tree, LATEX* latex) {
     *is_update = true;
 
 
-void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
-    if (*node == nullptr) { return; }
+dfr_return_t OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
+    dfr_return_t result = dfr_return_t::OK;
+    if (*node == nullptr) { return dfr_return_t::NODE_PTR_ERROR; }
 
     if (T_ == node_type::OPERATION) {
-        OptimizeConstantElements(tree, &(L_), is_update);
-        OptimizeConstantElements(tree, &(R_), is_update);
+        if (L_ != nullptr) { CHECK_AND_RETURN(OptimizeConstantElements(tree, &(L_), is_update)); }
+        if (R_ != nullptr) { CHECK_AND_RETURN(OptimizeConstantElements(tree, &(R_), is_update)); }
 
         if ((L_ != nullptr) && (R_ != nullptr)) {
             if (LT_ == node_type::NUMBER && RT_ == node_type::NUMBER) {
@@ -74,14 +82,17 @@ void OptimizeConstantElements(Tree_type* tree, Node_t** node, bool* is_update) {
             }
         }
     }
+
+    return dfr_return_t::OK;
 }
 
-void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
-    if (*node == nullptr) { return; }
+dfr_return_t DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
+    dfr_return_t result = dfr_return_t::OK;
+    if (*node == nullptr) { return dfr_return_t::NODE_PTR_ERROR; }
 
     if (T_ == node_type::OPERATION) {
-        DeleteNeutralElements(tree, &L_, is_update);
-        DeleteNeutralElements(tree, &R_, is_update);
+        if (L_ != nullptr) { CHECK_AND_RETURN(DeleteNeutralElements(tree, &L_, is_update)); }
+        if (R_ != nullptr) { CHECK_AND_RETURN(DeleteNeutralElements(tree, &R_, is_update)); }
 
         if (OP_ == operation_type::MUL) {
             if ((LT_ == node_type::NUMBER && CompareDouble(LN_, 0) == 0) || \
@@ -145,6 +156,8 @@ void DeleteNeutralElements(Tree_type* tree, Node_t** node, bool* is_update) {
             }
         }
     }
+
+    return dfr_return_t::OK;
 }
 
 static void ReplaceParentOnChild(Node_t** parent, Node_t* child) {

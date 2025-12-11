@@ -84,6 +84,7 @@ void SubTreeDump(Tree_type* tree, Node_t* node, const char* message, tree_return
         GoLog(tree->root, tree->size, node, message, tree->log);
         #endif
     }
+    tree; node; message;
     /*switch(error) {
         case tree_return_t::TREE_OK:
         case tree_return_t::INVALID_ANSWER:

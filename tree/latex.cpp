@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "../differentiator.h"
 #include "tree.h"
 
@@ -33,9 +35,11 @@ void StartLatex(LATEX* latex) {
     fprintf(latex->file_latex,
         "\\documentclass{article}\n"
         "\\usepackage{amsmath}\n"
+        "\\usepackage{amsthm}\n"
+        "\\usepackage{amssymb}\n"
         "\\usepackage{mathtools}\n"
         "\\usepackage{amsfonts}\n"
-        "\\usepackage{breqn}\n"
+        "\\usepackage[allowbreaks]{breqn}\n"
 
         "\\usepackage[utf8]{inputenc}\n"
         "\\usepackage[T2A]{fontenc}\n"
@@ -54,24 +58,6 @@ void FinishLatex(LATEX* latex) {
     fclose(latex->file_latex);
 }
 
-//----------------------------------------------------------------------------------
-
-void FormulaToLatex(LATEX* latex, Node_t* node) {
-    char* buffer = (char*)calloc(LATEX_EXPRESSION_SIZE, sizeof(char));
-    size_t pos = 0;
-
-    LatexRecursive(node, buffer, &pos);
-    buffer[pos] = '\0';
-
-    /* Use align* with displaystyle so expressions are large and aligned nicely
-       This makes step-by-step equations more readable in the resulting PDF. */
-    fprintf(latex->file_latex,
-        "\\begin{align*}\n\\displaystyle %s\\\n\\end{align*}\n\n",
-        buffer);
-
-    free(buffer);
-    buffer = nullptr;
-}
 
 //----------------------------------------------------------------------------------
 
@@ -83,10 +69,12 @@ void TechBeginSubsection(LATEX* latex, const char* title) {
     fprintf(latex->file_latex, "\\subsection*{%s}\n\n", title);
 }
 
+void TechBeginSubsubsection(LATEX* latex, const char* title) {
+    fprintf(latex->file_latex, "\\subsubsection*{%s}\n\n", title);
+}
+
 void TechAppendText(LATEX* latex, const char* text) {
-    /* Write a small, bolded description for a step/action, followed by a
-       little vertical space to separate from formulas. */
-    fprintf(latex->file_latex, "\\noindent\\textbf{%s}\\\\[6pt]\\n", text);
+    fprintf(latex->file_latex, "%s\\\\\n", text);
 }
 
 void TechAppendCommand(LATEX* latex, const char* command) {
@@ -95,34 +83,28 @@ void TechAppendCommand(LATEX* latex, const char* command) {
 
 //----------------------------------------------------------------------------------
 
-void TechBeginEquationBlock(LATEX* latex) {
-    fprintf(latex->file_latex, "\\begin{align*}\n");
-}
-
-void TechAppendEquationStep(LATEX* latex, Node_t* left, Node_t* right, const char* comment) {
-    if (latex == nullptr || latex->file_latex == nullptr) return;
-
-    char left_buf[LATEX_EXPRESSION_SIZE] = {0};
-    char right_buf[LATEX_EXPRESSION_SIZE] = {0};
-    size_t lpos = 0, rpos = 0;
-
-    LatexRecursive(left, left_buf, &lpos);
-    left_buf[lpos] = '\0';
-
-    LatexRecursive(right, right_buf, &rpos);
-    right_buf[rpos] = '\0';
-
-    if (comment != nullptr && comment[0] != '\0') {
-        fprintf(latex->file_latex, "\\displaystyle %s & = %s \\quad \\text{\\small %s}\\\\n",
-                left_buf, right_buf, comment);
+void TechBeginEquationBlock(LATEX* latex, const char* title) {
+    if (title && title[0] != '\0') {
+        fprintf(latex->file_latex, "\n\\noindent\\textbf{%s}\\\\[4pt]\n", title);
     }
-    else {
-        fprintf(latex->file_latex, "\\displaystyle %s & = %s \\\\n+", left_buf, right_buf);
-    }
+    fprintf(latex->file_latex, "\\begin{dmath*}\n");
 }
 
 void TechEndEquationBlock(LATEX* latex) {
-    fprintf(latex->file_latex, "\\end{align*}\n\n");
+    fprintf(latex->file_latex, "\\end{dmath*}\n\n");
+
+    TechAddMem(latex);
+}
+
+void TechAppendFormula(LATEX* latex, Node_t* node) {
+    if (latex == nullptr || latex->file_latex == nullptr) return;
+
+    char buf[LATEX_EXPRESSION_SIZE] = {};
+    size_t pos = 0;
+    LatexRecursive(node, buf, &pos);
+    buf[pos] = '\0';
+
+    fprintf(latex->file_latex, "%s\n", buf);
 }
 
 //----------------------------------------------------------------------------------
@@ -189,6 +171,11 @@ static int GetPriority(operation_type op) {
 
 static void LatexRecursive(Node_t* node, char* buffer, size_t* pos) {
     if (node == nullptr) return;
+
+    if (*pos > LATEX_EXPRESSION_SIZE - 500) {
+        ADD_TO_BUFFER("...");
+        return;
+    }
 
     if (node->type == node_type::OPERATION) {
         bool needs_paren = false;
@@ -375,4 +362,54 @@ void LatexToPDF(LATEX* latex) {
     system(command);
     snprintf(command, LATEX_COMMAND_SIZE, "rm %s.log", latex->name);
     system(command);
+}
+
+//----------------------------------------------------------------------------------
+
+void TechAddMem(LATEX* latex) {
+    int randomNumber = rand() % 200;
+
+    char buffer[1000] = {};
+    int lineNumber = 0;
+    FILE* file = fopen("tree/mems.txt", "rb");
+
+    char* result;
+
+    while ((result = fgets(buffer, 1000, file)) != nullptr) {
+        if (lineNumber == randomNumber) {
+            int pos = 0;
+            while (result[pos] != '\n') pos++;
+            result[pos] = '\0';
+
+            fprintf(latex->file_latex, "\n%s \n", buffer);
+            break;
+        }
+        lineNumber++;
+    }
+
+    fclose(file);
+}
+
+void TechAddOptMem(LATEX* latex) {
+    int randomNumber = rand() % 200;
+
+    char buffer[1000] = {};
+    int lineNumber = 0;
+    FILE* file = fopen("tree/mems.txt", "rb");
+
+    char* result;
+
+    while ((result = fgets(buffer, 1000, file)) != nullptr) {
+        if (lineNumber == randomNumber) {
+            int pos = 0;
+            while (result[pos] != '\n') pos++;
+            result[pos] = '\0';
+
+            fprintf(latex->file_latex, "\\text{%s} \\\\\n", buffer);
+            break;
+        }
+        lineNumber++;
+    }
+
+    fclose(file);
 }

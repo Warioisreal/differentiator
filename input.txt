@@ -1,1 +1,1 @@
-log_(2.71)(1 + x)$
+x=1 | Dx=10 dot=0 rngX=5 rngY=1.5$ sin(15 * x ^ 2)$

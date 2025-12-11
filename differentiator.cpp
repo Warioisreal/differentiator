@@ -5,17 +5,14 @@
 
 #include "tree/tree_func.h"
 #include "tree/latex.h"
+#include "tree/checkers.h"
 
 #include "math_func.h"
 #include "optimazer.h"
 #include "differentiator.h"
 
 
-
-struct Variable VarTable[VAR_TABLE_SIZE] = {
-    {"x", 0, 0},
-    {"y", 0, 0}
-};
+struct Variable VarTable[VAR_TABLE_SIZE] = {};
 
 struct Operation OprTable[OPR_TABLE_SIZE] = {
     {operation_type::DEFAULT, "DEFAULT", 0},
@@ -51,6 +48,14 @@ struct Operation OprTable[OPR_TABLE_SIZE] = {
     {operation_type::D, "d_", 0}
 };
 
+struct Params ParamsTable[PARAMS_TABLE_SIZE] = {
+    {"drv_var", {0}},
+    {"drv_cnt", {0}},
+    {"dot",     {0}},
+    {"rngX",    {0}},
+    {"rngY",    {0}}
+};
+
 
 #define SUBTREE(tree_number) tree##tree_number
 
@@ -82,22 +87,21 @@ static Node_t* NewVariableNode(const char* var);
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r);
 static Node_t* NewNode(node_type node_t, union ValueData value, Node_t* node_l, Node_t* node_r);
 static Node_t* CopyNode(Node_t* node);
-static void PrintVarTable();
-static size_t ReadVarNumber();
-static size_t GetVarNumber(const char* var_name);
 static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, size_t degree, size_t hash, LATEX* latex);
 static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex);
 static dfr_return_t ReallocSubTreesArray(ExtraTrees* calc_array);
 
 
-void CalculateTables(void) {
+void CalculateTables(size_t drv_hash, size_t drv_cnt, double dot, double rngX, double rngY) {
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
-        double val = 0;
-        printf("Введите значение переменной %s:\n", VarTable[pos].name);
-        scanf("%lg", &val);
-        VarTable[pos].value = val;
         VarTable[pos].hash = CalculateStringHash(VarTable[pos].name);
     }
+
+    ParamsTable[0].param_data.szt = drv_hash;
+    ParamsTable[1].param_data.szt = drv_cnt;
+    ParamsTable[2].param_data.dbl = dot;
+    ParamsTable[3].param_data.dbl = rngX;
+    ParamsTable[4].param_data.dbl = rngY;
 
     for (size_t pos = 0; pos < OPR_TABLE_SIZE; pos++) {
         OprTable[pos].hash = CalculateStringHash(OprTable[pos].name);
@@ -226,51 +230,27 @@ double SolveRec(Node_t* node) {
 //----------------------------------------------------------------------------------
 
 void DiffUserFindDerivative(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
-    printf("По какой переменной дифференцировать?\n");
+    size_t var_hash = ParamsTable[0].param_data.szt;
+    size_t power    = ParamsTable[1].param_data.szt;
 
-    PrintVarTable();
-
-    size_t var_num = ReadVarNumber();
-
-    if (var_num == VAR_TABLE_SIZE) {
-        printf("invalid var\n");
-        return;
-    }
-
-    size_t var_hash = VarTable[var_num].hash;
-
-    printf("Какую по счёту производную найти?\n");
-
-    size_t power = 0;
-
-    scanf("%zu", &power);
-
-    TechBeginSection(latex, "Derivative");
+    TechBeginSection(latex, "Мега-производная");
 
     DiffDifferentiateEquation(tree, calc_array, power, var_hash, latex);
 }
 
 void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
-    printf("По какой переменной строить ряд?\n");
+    size_t var_num = 0;
 
-    PrintVarTable();
-
-    size_t var_num = ReadVarNumber();
-
-    if (var_num == VAR_TABLE_SIZE) {
-        printf("invalid var\n");
-        return;
+    for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
+        if (VarTable[pos].hash == ParamsTable[0].param_data.szt) {
+            var_num = pos;
+            break;
+        }
     }
+    double dot      = ParamsTable[2].param_data.dbl;
+    size_t accuracy = ParamsTable[1].param_data.szt;
 
-    printf("В окрестности какой точки?\n");
-    double dot = 0;
-    scanf("%lg", &dot);
-
-    printf("С какой точностью?\n");
-    size_t accuracy = 0;
-    scanf("%zu", &accuracy);
-
-    TechBeginSection(latex, "Taylor Series");
+    TechBeginSection(latex, "ЧАВО, РЯД ТЕЙЛОРА?!");
 
     CreateTaylorSeries(tree, calc_array, dot, accuracy, var_num, latex);
 }
@@ -280,21 +260,6 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* 
 #define SIZE calc_array->size
 #define SUBT ARR[SIZE]
 //=================================================================================
-
-#define GET_PARAMS \
-    printf("Какая переменная является аргументом?\n"); \
-    PrintVarTable(); \
-    size_t var_num = ReadVarNumber(); \
-    if (var_num == VAR_TABLE_SIZE) { \
-        printf("invalid var\n"); \
-        return; \
-    } \
-    printf("В окрестности какой точки?\n"); \
-    double dot = 0; \
-    scanf("%lg", &dot); \
-    printf("С какой точностью?\n"); \
-    size_t accuracy = 0; \
-    scanf("%zu", &accuracy);
 
 #define INIT_FILENAMES \
     const char* func_filename = "function_data.txt"; \
@@ -330,15 +295,26 @@ void DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, LATEX* 
 
 
 void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
-    GET_PARAMS;
+    size_t var_num = 0;
 
-    TechBeginSection(latex, "Функция, производная и ряд Тейлора");
+    for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
+        if (VarTable[pos].hash == ParamsTable[0].param_data.szt) {
+            var_num = pos;
+            break;
+        }
+    }
+    double dot      = ParamsTable[2].param_data.dbl;
+    size_t accuracy = ParamsTable[1].param_data.szt;
+
+    TechBeginSection(latex, "Строим графики всего м*ть его");
+
+    TechAddMem(latex);
 
     char buf[1000] = {};
     snprintf(buf, 1000,
-        "Вычисление относительно переменной %s\n"
-        "Вычисление в окрестности точки %lg\n"
-        "Вычисление с точностью %zu\n",
+        "Вычисление относительно переменной $%s$ \\\\\n"
+        "Вычисление в окрестности точки $%lg$ \\\\\n"
+        "Вычисление с точностью $%zu$ \\\\\n",
         VarTable[var_num].name, dot, accuracy);
 
     TechAppendText(latex, buf);
@@ -365,7 +341,7 @@ void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
     VarTable[var_num].value = default_value;
 
 
-    FILE* gp_file = StartGnuplot(1.5, 5, dot);
+    FILE* gp_file = StartGnuplot(ParamsTable[4].param_data.dbl, ParamsTable[3].param_data.dbl, ParamsTable[2].param_data.dbl);
     WriteGnuplotCMD(gp_file, "plot ");
     ADD_FUNCTION_TO_GNUPLOT;
     WriteGnuplotCMD(gp_file, ", ");
@@ -393,8 +369,8 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
         INIT_SUBTREE;
 
         char chapter_title[128] = "";
-        snprintf(chapter_title, sizeof(chapter_title), "%zu derivative", curent_power + 1);
-        TechBeginSubsection(latex, chapter_title);
+        snprintf(chapter_title, 128, "Невозможная %zu-я производная (возможная)", curent_power + 1);
+        TechBeginSubsubsection(latex, chapter_title);
 
         if (curent_power == 0) {
             SUBT->root = DiffRec(tree->root, hash);
@@ -405,6 +381,11 @@ static void DiffDifferentiateEquation(Tree_type* tree, ExtraTrees* calc_array, s
         TreeCountNodes(SUBT->root, &(SUBT->size));
 
         TreePrint(SUBT, "DIR");
+
+        TechAppendText(latex, "Ну что-то получилось:");
+        TechBeginEquationBlock(latex, "");
+        TechAppendFormula(latex, SUBT->root);
+        TechEndEquationBlock(latex);
 
         OptimizeTree(SUBT, latex);
 
@@ -460,9 +441,9 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
                 case operation_type::DIV:
                     return DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), POW_(cR, aNn(2)));
                 case operation_type::SIN:
-                    return CS_(cL);
+                    return MUL_(CS_(cL), dL);
                 case operation_type::COS:
-                    return MUL_(SN_(cL), aNn(-1));
+                    return MUL_(MUL_(SN_(cL), aNn(-1)), dL);
                 case operation_type::TAN:
                     return DIV_(dL, POW_(CS_(cL), aNn(2)));
                 case operation_type::CTAN:
@@ -540,7 +521,7 @@ static Node_t* DiffRec(Node_t* node, size_t target_hash) {
 //======================================
 
 static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double dot, size_t accuracy, size_t var_num, LATEX* latex) {
-    TechBeginSubsection(latex, "Taylor Series");
+    TechBeginSubsection(latex, "Очень сложный ряд тейлора");
     DiffDifferentiateEquation(tree, calc_array, accuracy, VarTable[var_num].hash, latex);
 
     INIT_SUBTREE;
@@ -552,7 +533,10 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
     SUBT->size = 1;
     SIZE++;
 
-    FormulaToLatex(latex, ARR[SIZE - 1]->root);
+    TechBeginEquationBlock(latex, "Дефолт...");
+    TechAppendFormula(latex, ARR[SIZE - 1]->root);
+    TechEndEquationBlock(latex);
+    TechAddMem(latex);
 
     for (size_t iter = 0; iter < accuracy; iter++) {
         Node_t* node = aNn(SolveRec(ARR[SIZE - 1 - accuracy + iter]->root));
@@ -562,10 +546,25 @@ static void CreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array, double d
         ARR[SIZE - 1]->size += 1 + ARR[SIZE - 1 - accuracy + iter]->size + 8;
         TreePrint(ARR[SIZE - 1], "abc");
 
-        FormulaToLatex(latex, ARR[SIZE - 1]->root);
+        TechBeginEquationBlock(latex, "");
+        TechAppendFormula(latex, ARR[SIZE - 1]->root);
+        TechEndEquationBlock(latex);
 
         OptimizeTree(ARR[SIZE - 1], latex);
     }
+
+    char title[128] = "";
+    if (CompareDouble(dot, 0) != 0) {
+        snprintf(title, 128, "Это что, зайчик с o((x - %lg)^%zu)?", dot, accuracy);
+    } else {
+        snprintf(title, 128, "Это что, зайчик с o(x^%zu)?", accuracy);
+    }
+    TechBeginEquationBlock(latex, title);
+    TechAppendFormula(latex, ARR[SIZE - 1]->root);
+    TechEndEquationBlock(latex);
+    TechAppendText(latex, "много мемов не бывает!");
+    TechAddMem(latex);
+    TechAddMem(latex);
 
     VarTable[var_num].value = default_value;
 
@@ -695,22 +694,17 @@ void DiffDtor(Tree_type* eq_tree, ExtraTrees* calc_array, LATEX* latex) {
 
 //----------------------------------------------------------------------------------
 
-static void PrintVarTable() {
+void PrintVarTable() {
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {
-        printf("%s ", VarTable[pos].name);
-    } printf("\n");
+        if (VarTable[pos].name[0] != '\0') {
+        printf("%s %lg\n", VarTable[pos].name, VarTable[pos].value);
+        }
+    }
 }
 
 //----------------------------------------------------------------------------------
 
-static size_t ReadVarNumber() {
-    char var_name[VARIABLE_NAME_SIZE] = "";
-    scanf("%s", var_name);
-
-    return GetVarNumber(var_name);
-}
-
-static size_t GetVarNumber(const char* var_name) {
+size_t GetVarNumber(const char* var_name) {
     size_t hash = CalculateStringHash(var_name);
 
     for (size_t pos = 0; pos < VAR_TABLE_SIZE; pos++) {

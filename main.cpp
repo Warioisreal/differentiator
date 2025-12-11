@@ -13,6 +13,10 @@ int main(void) {
 
     OptimizeTree(&dfr_tree, &dfr_tex);
 
+    DiffUserFindDerivative(&dfr_tree, &calc_trees_array, &dfr_tex);
+
+    DiffUserCreateTaylorSeries(&dfr_tree, &calc_trees_array, &dfr_tex);
+
     MakeFuncGraphs(&dfr_tree, &calc_trees_array, &dfr_tex);
 
     DiffDtor(&dfr_tree, &calc_trees_array, &dfr_tex);

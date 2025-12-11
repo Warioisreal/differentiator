@@ -9,23 +9,30 @@ static void ReplaceParentOnChild(Node_t** parent, Node_t* child);
 
 
 void OptimizeTree(Tree_type* tree, LATEX* latex) {
-    TechBeginSubsection(latex, "Упрощение уравнения");
-    FormulaToLatex(latex, tree->root);
+    TechBeginSubsubsection(latex, "Бесполезное упрощение уравнения");
+    TechAppendText(latex, "Итак, вот с чем мы работаем:");
+    TechBeginEquationBlock(latex, "");
+    TechAppendFormula(latex, tree->root);
+    TechEndEquationBlock(latex);
 
     bool is_update = true;
     while (is_update == true) {
         is_update = false;
         OptimizeConstantElements(tree, &tree->root, &is_update);
 
-        TechAppendText(latex, "Свертка констант");
-        FormulaToLatex(latex, tree->root);
+        TechBeginEquationBlock(latex, "");
+        TechAppendFormula(latex, tree->root);
+        TechEndEquationBlock(latex);
 
         DeleteNeutralElements(tree, &tree->root, &is_update);
 
-        TechAppendText(latex, "Удаление нейтральных элементов");
-        FormulaToLatex(latex, tree->root);
+        TechBeginEquationBlock(latex, "");
+        TechAppendFormula(latex, tree->root);
+        TechEndEquationBlock(latex);
     }
-    FormulaToLatex(latex, tree->root);
+    TechBeginEquationBlock(latex, "Выражение после упрощения");
+    TechAppendFormula(latex, tree->root);
+    TechEndEquationBlock(latex);
 
     TreePrint(tree, "Optimize tree");
 

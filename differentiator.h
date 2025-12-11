@@ -11,8 +11,9 @@ struct Tree_type;
 struct Node_t;
 
 
-const size_t VAR_TABLE_SIZE = 2;
-const size_t OPR_TABLE_SIZE = 24;
+const size_t VAR_TABLE_SIZE    = 64;
+const size_t PARAMS_TABLE_SIZE = 5;
+const size_t OPR_TABLE_SIZE    = 24;
 
 const size_t VARIABLE_NAME_SIZE  = 10;
 const size_t OPERATION_NAME_SIZE = 10;
@@ -76,7 +77,18 @@ struct Operation {
     size_t hash = 0;
 };
 
-extern struct Variable VarTable[VAR_TABLE_SIZE];
+union ParamValue {
+    size_t szt;
+    double dbl;
+};
+
+struct Params {
+    const char* param_name = nullptr;
+    union ParamValue param_data;
+};
+
+extern struct Variable  VarTable[VAR_TABLE_SIZE];
+extern struct Params    ParamsTable[PARAMS_TABLE_SIZE];
 extern struct Operation OprTable[OPR_TABLE_SIZE];
 
 struct ExtraTrees {
@@ -88,7 +100,6 @@ struct ExtraTrees {
 
 #ifdef LOG_TREE
 #define MAKE_DFR(dfr_name, calc_arr_name, latex_name, arr_size) \
-    CalculateTables(); \
     UpdateLogsFolder(); \
     MAKE_TREE(dfr_name); \
     MAKE_LATEX(latex_name); \
@@ -96,7 +107,6 @@ struct ExtraTrees {
     CreateSubTreesArray(&calc_arr_name, arr_size);
 #else
 #define MAKE_DFR(dfr_name, calc_arr_name, latex_name, arr_size) \
-    CalculateTables(); \
     MAKE_TREE(dfr_name); \
     MAKE_LATEX(latex_name); \
     ExtraTrees calc_arr_name = {}; \
@@ -105,10 +115,10 @@ struct ExtraTrees {
 
 
 
-
-
 size_t CalculateStringHash(const char* src);
-void CalculateTables(void);
+size_t GetVarNumber(const char* var_name);
+void CalculateTables(size_t drv_hash, size_t drv_cnt, double dot, double rngX, double rngY);
+void PrintVarTable();
 
 void MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex);
 

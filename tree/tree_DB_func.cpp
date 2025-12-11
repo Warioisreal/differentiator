@@ -3,9 +3,15 @@
 #include "checkers.h"
 
 #include "tree_DB_func.h"
+#include "../differentiator.h"
 
 
 static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int* position);
+
+static void ReadData(const char** s);
+static void AddVarToTable(const char** s, size_t* size);
+static char*  ReadDRVname(const char** s);
+static size_t ReadDRVcnt(const char** s);
 
 static Node_t* GetExpression(const char** s);
 static Node_t* GetAddition(const char** s);
@@ -17,6 +23,7 @@ static Node_t* GetNumber(const char** s);
 static Node_t* GetVariable(const char** s);
 
 static void SkipSpaces(const char** s);
+static double GetDouble(const char** s);
 
 tree_return_t TreeMakeDB(const char* filename, Tree_type* tree, LATEX* latex) {
     //TREE_VERIFY_AND_RETURN(tree, tree->root, true, "ERROR BEFORE MakeDB");
@@ -119,7 +126,6 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree, LATEX* latex) {
     TreeDtorRec(&(tree->root), &(tree->size));
 
     tree->size = 0;
-
     const char* s = buffer;
 
     Node_t* node = GetExpression(&s);
@@ -134,8 +140,12 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree, LATEX* latex) {
 
     TreeCountNodes(tree->root, &(tree->size));
 
-    TechBeginSection(latex, "Прочитанное уравнение");
-    FormulaToLatex(latex, tree->root);
+    TechAppendText(latex,
+        "Так, умный пользователь ввел нам выражение, "
+        "теперь мы будем всячески его коверкать, ломать и изливать душу");
+    TechBeginEquationBlock(latex, "");
+    TechAppendFormula(latex, tree->root);
+    TechEndEquationBlock(latex);
 
     TreePrint(tree, "DUMP DB TREE");
 
@@ -147,8 +157,13 @@ tree_return_t TreeReadDB(const char* filename, Tree_type* tree, LATEX* latex) {
 static Node_t* GetExpression(const char** s) {
     SkipSpaces(s);
 
-    Node_t* node = GetAddition(s);
+    ReadData(s);
 
+    if (**s != '$') { return nullptr; }
+    (*s)++;
+
+    SkipSpaces(s);
+    Node_t* node = GetAddition(s);
     SkipSpaces(s);
 
     if (**s != '$') { return nullptr; }
@@ -156,6 +171,92 @@ static Node_t* GetExpression(const char** s) {
 
     return node;
 }
+
+//==========================================
+static void ReadData(const char** s) {
+    size_t VarTable_size = 0;
+
+    while (**s != '|') {
+        AddVarToTable(s, &VarTable_size);
+        SkipSpaces(s);
+    }
+    (*s)++;
+
+    SkipSpaces(s);
+    char* drv_name = ReadDRVname(s);
+
+    size_t drv_hash = CalculateStringHash(drv_name);
+
+    free(drv_name);
+    drv_name = nullptr;
+
+    SkipSpaces(s);
+    size_t drv_cnt = ReadDRVcnt(s);
+
+    SkipSpaces(s); (*s) += 3; SkipSpaces(s); (*s)++; SkipSpaces(s);  // skip all to value
+    double dot = GetDouble(s);
+
+    SkipSpaces(s); (*s) += 4; SkipSpaces(s); (*s)++; SkipSpaces(s);  // skip all to value
+    double rngX = GetDouble(s);
+
+    SkipSpaces(s); (*s) += 4; SkipSpaces(s); (*s)++; SkipSpaces(s); // skip all to value
+    double rngY = GetDouble(s);
+
+
+    CalculateTables(drv_hash, drv_cnt, dot, rngX, rngY);
+
+}
+
+static void AddVarToTable(const char** s, size_t* size) {
+    char buffer[10] = "";
+    int index = 0;
+
+    while (isalpha(**s)) { buffer[index++] = *(*s)++; }
+    buffer[index] = '\0';
+
+    VarTable[*size] = {};
+    snprintf(VarTable[*size].name, VARIABLE_NAME_SIZE, "%s", buffer);
+
+    SkipSpaces(s); (*s)++; SkipSpaces(s);
+
+    VarTable[*size].value = GetDouble(s);
+
+    (*size)++;
+}
+
+static char* ReadDRVname(const char** s) {
+    (*s)++; // skip "D"
+
+    char buffer[10] = "";
+    int index = 0;
+
+    while (isalpha(**s)) { buffer[index++] = *(*s)++; }
+    buffer[index] = '\0';
+
+    SkipSpaces(s);
+
+
+    return strdup(buffer);
+}
+
+static size_t ReadDRVcnt(const char** s) {
+    (*s)++; // skip "="
+
+    SkipSpaces(s);
+
+    size_t drv_cnt = 0;
+
+    while (isdigit(**s)) {
+        drv_cnt = drv_cnt * 10 + (size_t)(**s - '0');
+        (*s)++;
+    }
+
+    SkipSpaces(s);
+
+
+    return drv_cnt;
+}
+//==========================================
 
 static Node_t* GetAddition(const char** s) {
     SkipSpaces(s);
@@ -277,32 +378,8 @@ static Node_t* GetP(const char** s) {
 }
 
 static Node_t* GetNumber(const char** s) {
-    char number_str[100] = "";
-    int index = 0;
-
-    double number_value = 1;
-
-    if (**s == '-' && '0' <= *(1 + *s) && *(1 + *s) <= '9') {
-        number_value = -1;
-        (*s)++;
-    }
-
-    while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
-
-    if (**s == '.') {
-        number_str[index++] = *(*s)++;
-
-        while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
-    }
-
-    SkipSpaces(s);
-
-    number_str[index] = '\0';
-
-    number_value *= atof(number_str);
-
     union ValueData value;
-    value.number = number_value;
+    value.number = GetDouble(s);
     Node_t* node = MakeTreeElement(node_type::NUMBER, value);
     return node;
 }
@@ -324,6 +401,14 @@ static Node_t* GetVariable(const char** s) {
 
     union ValueData value;
     value.variable = strdup(var_name); // возможны утечки по памяти
+
+    if (**s != '(') {
+        size_t var_num = GetVarNumber(value.variable);
+
+        if (var_num == VAR_TABLE_SIZE) {
+
+        }
+    }
     // было бы хорошо тут записывать массив переменных
 
     Node_t* node = MakeTreeElement(node_type::VARIABLE, value);
@@ -387,4 +472,31 @@ static void SkipSpaces(const char** s) {
     while (isspace(**s)) {
         (*s)++;
     }
+}
+
+static double GetDouble(const char** s) {
+    char number_str[100] = "";
+    int index = 0;
+
+    int sign = 1;
+
+    if (**s == '-' && '0' <= *(1 + *s) && *(1 + *s) <= '9') {
+        sign = -1;
+        (*s)++;
+    }
+
+    while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
+
+    if (**s == '.') {
+        number_str[index++] = *(*s)++;
+
+        while ('0' <= **s && **s <= '9') { number_str[index++] = *(*s)++; }
+    }
+
+    number_str[index] = '\0';
+
+    SkipSpaces(s);
+
+
+    return sign * atof(number_str);
 }

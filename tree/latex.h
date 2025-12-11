@@ -7,7 +7,7 @@
 static const size_t LATEX_COMMAND_SIZE = 100;
 
 static const size_t LATEX_FILE_NAME_SIZE = 100;
-static const size_t LATEX_EXPRESSION_SIZE = 1000;
+static const size_t LATEX_EXPRESSION_SIZE = 5000;
 
 struct Node_t;
 
@@ -25,24 +25,21 @@ void TechInit(LATEX* latex);
 
 void StartLatex(LATEX* latex);
 void FinishLatex(LATEX* latex);
-void FormulaToLatex(LATEX* latex, Node_t* node);
 
 void TechBeginSection(LATEX* latex,    const char* title);
+void TechBeginSubsubsection(LATEX* latex, const char* title);
 void TechBeginSubsection(LATEX* latex, const char* title);
 void TechAppendText(LATEX* latex, const char* text);
 void TechAppendCommand(LATEX* latex, const char* command);
 
-/* Helpers for producing step-by-step equation blocks.
-     Usage:
-         TechBeginEquationBlock(latex);
-         TechAppendEquationStep(latex, leftNode, rightNode, "comment");
-         ...
-         TechEndEquationBlock(latex);
-*/
-void TechBeginEquationBlock(LATEX* latex);
-void TechAppendEquationStep(LATEX* latex, struct Node_t* left, struct Node_t* right, const char* comment);
+void TechBeginEquationBlock(LATEX* latex, const char* title);
 void TechEndEquationBlock(LATEX* latex);
+void TechAppendFormula(LATEX* latex, struct Node_t* expr);
 
 void LatexToPDF(LATEX* latex);
+
+void TechAddMem(LATEX* latex);
+
+void TechAddOptMem(LATEX* latex);
 
 #endif // _LATEX_H_

@@ -15,7 +15,7 @@ const size_t HASH_SEED = 5381;
 
 union ValueData {
     operation_type operation;
-    const char* variable;
+    char* variable;
     double number;
 };
 

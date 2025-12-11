@@ -9,7 +9,7 @@
 static tree_return_t TreeGetDB(Tree_type* tree, char* buffer, Node_t* node, int* position);
 
 static void ReadData(const char** s);
-static void AddVarToTable(const char** s, size_t* size);
+static int AddVarToTable(const char** s, size_t* size);
 static char*  ReadDRVname(const char** s);
 static size_t ReadDRVcnt(const char** s);
 
@@ -18,7 +18,7 @@ static Node_t* GetAddition(const char** s);
 static Node_t* GetMultiplication(const char** s);
 static Node_t* GetPower(const char** s);
 static Node_t* GetMathFunc(const char** s, Node_t* var_node);
-static Node_t* GetP(const char** s);
+static Node_t* GetPrimary(const char** s);
 static Node_t* GetNumber(const char** s);
 static Node_t* GetVariable(const char** s);
 
@@ -173,41 +173,57 @@ static Node_t* GetExpression(const char** s) {
 }
 
 //==========================================
+#define SKIP(n) (*s) += n; SkipSpaces(s);
+
 static void ReadData(const char** s) {
     size_t VarTable_size = 0;
 
     while (**s != '|') {
-        AddVarToTable(s, &VarTable_size);
+        if (AddVarToTable(s, &VarTable_size) != 0) { return; }
         SkipSpaces(s);
     }
-    (*s)++;
+    SKIP(1); // skip '|'
 
-    SkipSpaces(s);
     char* drv_name = ReadDRVname(s);
+    if (drv_name == nullptr) { return; }
 
     size_t drv_hash = CalculateStringHash(drv_name);
 
-    free(drv_name);
-    drv_name = nullptr;
+    free(drv_name); drv_name = nullptr;
+    SkipSpaces(s);
+
+    size_t drv_cnt = ReadDRVcnt(s);
+    if (drv_cnt > MAX_DRV_NUMBER) { return; }
 
     SkipSpaces(s);
-    size_t drv_cnt = ReadDRVcnt(s);
+    if (**s != 'd' || *(*s + 1) != 'o' || *(*s + 2) != 't') { return; }
+    SKIP(3);  // skip "dot"
 
-    SkipSpaces(s); (*s) += 3; SkipSpaces(s); (*s)++; SkipSpaces(s);  // skip all to value
+    if (**s != '=') { return; } SKIP(1);  // skip '='
+
     double dot = GetDouble(s);
 
-    SkipSpaces(s); (*s) += 4; SkipSpaces(s); (*s)++; SkipSpaces(s);  // skip all to value
+    SkipSpaces(s);
+    if (**s != 'r' || *(*s + 1) != 'n' || *(*s + 2) != 'g' || *(*s + 3) != 'X') { return; }
+    SKIP(4); // skip "rngX"
+
+    if (**s != '=') { return; } SKIP(1);  // skip '='
+
     double rngX = GetDouble(s);
 
-    SkipSpaces(s); (*s) += 4; SkipSpaces(s); (*s)++; SkipSpaces(s); // skip all to value
+    SkipSpaces(s);
+    if (**s != 'r' || *(*s + 1) != 'n' || *(*s + 2) != 'g' || *(*s + 3) != 'Y') { return; }
+    SKIP(4); // skip "rngX"
+
+    if (**s != '=') { return; } SKIP(1);  // skip '='
+
     double rngY = GetDouble(s);
 
 
     CalculateTables(drv_hash, drv_cnt, dot, rngX, rngY);
-
 }
 
-static void AddVarToTable(const char** s, size_t* size) {
+static int AddVarToTable(const char** s, size_t* size) {
     char buffer[10] = "";
     int index = 0;
 
@@ -217,14 +233,18 @@ static void AddVarToTable(const char** s, size_t* size) {
     VarTable[*size] = {};
     snprintf(VarTable[*size].name, VARIABLE_NAME_SIZE, "%s", buffer);
 
-    SkipSpaces(s); (*s)++; SkipSpaces(s);
+    SkipSpaces(s);
+    if (**s != '=') { return 1; } SKIP(1); // skip '='
 
     VarTable[*size].value = GetDouble(s);
 
     (*size)++;
+
+    return 0;
 }
 
 static char* ReadDRVname(const char** s) {
+    if (**s != 'D') { return nullptr; }
     (*s)++; // skip "D"
 
     char buffer[10] = "";
@@ -240,9 +260,7 @@ static char* ReadDRVname(const char** s) {
 }
 
 static size_t ReadDRVcnt(const char** s) {
-    (*s)++; // skip "="
-
-    SkipSpaces(s);
+    if (**s != '=') { return 10e5; } SKIP(1); // skip "="
 
     size_t drv_cnt = 0;
 
@@ -256,6 +274,8 @@ static size_t ReadDRVcnt(const char** s) {
 
     return drv_cnt;
 }
+
+#undef SKIP
 //==========================================
 
 static Node_t* GetAddition(const char** s) {
@@ -278,6 +298,7 @@ static Node_t* GetAddition(const char** s) {
             value.operation = operation_type::SUB;
         }
         Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+
         new_node->left  = node;
         new_node->right = node2;
 
@@ -307,6 +328,7 @@ static Node_t* GetMultiplication(const char** s) {
             value.operation = operation_type::DIV;
         }
         Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+
         new_node->left  = node;
         new_node->right = node2;
 
@@ -318,19 +340,20 @@ static Node_t* GetMultiplication(const char** s) {
 
 static Node_t* GetPower(const char** s) {
     SkipSpaces(s);
-    Node_t* node = GetP(s);
+    Node_t* node = GetPrimary(s);
     SkipSpaces(s);
 
     while (**s == '^') {
         (*s)++;
         SkipSpaces(s);
-        Node_t* node2 = GetP(s);
+        Node_t* node2 = GetPrimary(s);
         SkipSpaces(s);
 
         union ValueData value;
         value.operation = operation_type::POW;
 
         Node_t* new_node = MakeTreeElement(node_type::OPERATION, value);
+
         new_node->left  = node;
         new_node->right = node2;
 
@@ -341,7 +364,7 @@ static Node_t* GetPower(const char** s) {
     return node;
 }
 
-static Node_t* GetP(const char** s) {
+static Node_t* GetPrimary(const char** s) {
     if (**s == '(') {
         (*s)++;
         SkipSpaces(s);
@@ -360,7 +383,6 @@ static Node_t* GetP(const char** s) {
         SkipSpaces(s);
         Node_t* var_node = GetVariable(s);
         SkipSpaces(s);
-
         // Это функция
         if (**s == '(') {
             SkipSpaces(s);
@@ -380,7 +402,10 @@ static Node_t* GetP(const char** s) {
 static Node_t* GetNumber(const char** s) {
     union ValueData value;
     value.number = GetDouble(s);
+
     Node_t* node = MakeTreeElement(node_type::NUMBER, value);
+
+
     return node;
 }
 
@@ -399,17 +424,19 @@ static Node_t* GetVariable(const char** s) {
 
     SkipSpaces(s);
 
+    size_t var_num = GetVarNumber(var_name);
+
     union ValueData value;
-    value.variable = strdup(var_name); // возможны утечки по памяти
 
-    if (**s != '(') {
-        size_t var_num = GetVarNumber(value.variable);
-
-        if (var_num == VAR_TABLE_SIZE) {
-
+    if (var_num < VAR_TABLE_SIZE) {
+        value.variable = VarTable[var_num].name;
+    } else {
+        if (**s == '(') {
+            value.variable = strdup(var_name);
+        } else {
+            return nullptr;
         }
     }
-    // было бы хорошо тут записывать массив переменных
 
     Node_t* node = MakeTreeElement(node_type::VARIABLE, value);
 
@@ -419,14 +446,16 @@ static Node_t* GetVariable(const char** s) {
 static Node_t* GetMathFunc(const char** s, Node_t* var_node) {
     if (var_node == nullptr || var_node->type != node_type::VARIABLE) { return nullptr; }
 
-    // Проверяем, что после имени функции идет '('
-    if (**s == '(') { (*s)++; }
-    SkipSpaces(s);
+    if (**s != '(') { return nullptr; } (*s)++; SkipSpaces(s);
 
     // Получаем имя функции из узла переменной
     const char* func_name = var_node->value.variable;
     size_t func_hash = CalculateStringHash(func_name);
     operation_type op = GetTypeOperation(func_name, func_hash);
+
+    // освобождаем память выделенную под переменную
+    free(var_node->value.variable);
+    var_node->value.variable = nullptr;
 
     if (op == operation_type::DEFAULT) { return nullptr; }
 
@@ -442,12 +471,10 @@ static Node_t* GetMathFunc(const char** s, Node_t* var_node) {
         base = GetAddition(s);
         SkipSpaces(s);
 
-        if (**s == ')') { (*s)++; } else { return nullptr; }
+        if (**s != ')') { return nullptr; } (*s)++; SkipSpaces(s);
 
-        SkipSpaces(s);
-
-        // аргумент
-        if (**s == '(') { (*s)++; }
+        // переход к аргументу
+        if (**s != '(') { return nullptr; } (*s)++; SkipSpaces(s);
     }
 
     // Обычные функции с одним аргументом
@@ -455,7 +482,7 @@ static Node_t* GetMathFunc(const char** s, Node_t* var_node) {
     Node_t* arg_node = GetAddition(s);
     SkipSpaces(s);
 
-    if (**s == ')') { (*s)++; } else { return nullptr; }
+    if (**s != ')') { return nullptr; } (*s)++; SkipSpaces(s);
 
     // Изменяем узел переменной на узел операции
     var_node->type  = node_type::OPERATION;
@@ -463,15 +490,15 @@ static Node_t* GetMathFunc(const char** s, Node_t* var_node) {
     var_node->left  = arg_node;
     var_node->right = base;
 
+    MakeGreenElem(var_node);
+
     return var_node;
 }
 
 //----------------------------------------------------------------------------------
 
 static void SkipSpaces(const char** s) {
-    while (isspace(**s)) {
-        (*s)++;
-    }
+    while (isspace(**s)) { (*s)++; }
 }
 
 static double GetDouble(const char** s) {
@@ -480,7 +507,7 @@ static double GetDouble(const char** s) {
 
     int sign = 1;
 
-    if (**s == '-' && '0' <= *(1 + *s) && *(1 + *s) <= '9') {
+    if (**s == '-' && '0' <= *(*s + 1) && *(*s + 1) <= '9') {
         sign = -1;
         (*s)++;
     }
@@ -496,6 +523,8 @@ static double GetDouble(const char** s) {
     number_str[index] = '\0';
 
     SkipSpaces(s);
+
+    if (index == 0) { (*s)--; }
 
 
     return sign * atof(number_str);

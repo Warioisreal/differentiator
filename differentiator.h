@@ -18,6 +18,8 @@ const size_t OPR_TABLE_SIZE    = 24;
 const size_t VARIABLE_NAME_SIZE  = 10;
 const size_t OPERATION_NAME_SIZE = 10;
 
+const size_t MAX_DRV_NUMBER = 30;
+
 typedef enum class NodeTypes : char {
     DEFAULT = 0,
 

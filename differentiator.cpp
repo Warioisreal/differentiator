@@ -83,7 +83,7 @@ struct Params ParamsTable[PARAMS_TABLE_SIZE] = {
 static size_t djb2(size_t hash, size_t field);
 static Node_t* DiffRec(Node_t* node, size_t target_hash);
 static Node_t* NewNumberNode(double number);
-static Node_t* NewVariableNode(const char* var);
+static Node_t* NewVariableNode(char* var);
 static Node_t* NewOperationNode(operation_type op_type, Node_t* node_l, Node_t* node_r);
 static Node_t* NewNode(node_type node_t, union ValueData value, Node_t* node_l, Node_t* node_r);
 static Node_t* CopyNode(Node_t* node);
@@ -622,7 +622,7 @@ static Node_t* NewNumberNode(double number) {
     return NewNode(node_type::NUMBER, value, nullptr, nullptr);
 }
 
-static Node_t* NewVariableNode(const char* var) {
+static Node_t* NewVariableNode(char* var) {
     union ValueData value;
 
     value.variable = var;

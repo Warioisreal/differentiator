@@ -3,3 +3,4 @@ binary_file
 *.a
 *.htm
 *.svg
+logs/

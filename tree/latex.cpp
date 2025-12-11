@@ -45,8 +45,21 @@ void StartLatex(LATEX* latex) {
         "\\usepackage[T2A]{fontenc}\n"
         "\\usepackage[russian]{babel}\n"
         "\\usepackage{microtype}\n"
+        "\\usepackage{graphicx}\n"
 
-        "\\begin{document}\n");
+        "\\begin{document}\n"
+        "\n");
+
+    TechBeginSection(latex, "Это начало работы дифференциатора. \\\\ ALERT: Приготовьтесь к матану!");
+
+    fprintf(latex->file_latex,
+        "\\begin{figure}[h]\n"
+        "\\centering\n"
+        "\\includegraphics[width=0.8\\linewidth]{matan_mem.jpg}\n"
+        "\\end{figure}\n\n"
+        "By Ershov Dmitriy\n\n"
+        "December 11, 2025\n"
+        "\\newpage\n");
 }
 
 //----------------------------------------------------------------------------------
@@ -62,7 +75,7 @@ void FinishLatex(LATEX* latex) {
 //----------------------------------------------------------------------------------
 
 void TechBeginSection(LATEX* latex, const char* title) {
-    fprintf(latex->file_latex, "\\section*{%s}\n\n", title);
+    fprintf(latex->file_latex, "\\begin{center}\n \\section*{%s}\n \\end{center}\n\n", title);
 }
 
 void TechBeginSubsection(LATEX* latex, const char* title) {

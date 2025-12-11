@@ -286,7 +286,7 @@ dfr_return_t DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array,
 
 #define WRITE_DATA_TO_FILES \
     AddDotToDataGnuplotFile(gp_file_function,   argument, SolveRec(tree->root)); \
-    AddDotToDataGnuplotFile(gp_file_derivative, argument, SolveRec(ARR[SIZE - accuracy - 1]->root)); \
+    AddDotToDataGnuplotFile(gp_file_derivative, argument, drv_x0 * (argument - dot) + y0); \
     AddDotToDataGnuplotFile(gp_file_taylor_srs, argument, SolveRec(ARR[SIZE - 1]->root));
 
 #define CLOSE_FILES \
@@ -295,8 +295,8 @@ dfr_return_t DiffUserCreateTaylorSeries(Tree_type* tree, ExtraTrees* calc_array,
     CloseDataGnuplotFile(gp_file_taylor_srs);
 
 #define ADD_FUNCTION_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, func_file_path, "Функция", 0xFF0000);
-#define ADD_DERIVATIVE_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, drvt_file_path, "Производная", 0x00FF00);
-#define ADD_TAILOR_SRS_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, tayl_file_path, "ряд Тейлора", 0x0000FF);
+#define ADD_DERIVATIVE_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, drvt_file_path, "Касательная", 0x00FF00);
+#define ADD_TAILOR_SRS_TO_GNUPLOT AddFuncGraphGnuplot(gp_file, tayl_file_path, "Ряд Тейлора", 0x0000FF);
 
 
 dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* latex) {
@@ -339,7 +339,11 @@ dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* late
     OPEN_FILES;
     CHECK_FILES_AND_RETURN;
 
-    for (double argument = dot - 5; argument < dot + 5; argument += 0.05) {
+    VarTable[var_num].value = dot;
+    double y0 = SolveRec(tree->root);
+    double drv_x0 = SolveRec(ARR[SIZE - accuracy - 1]->root);
+
+    for (double argument = dot - 5; argument < dot + 5; argument += 0.02) {
         VarTable[var_num].value = argument;
 
         WRITE_DATA_TO_FILES;
@@ -349,16 +353,20 @@ dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* late
 
     VarTable[var_num].value = default_value;
 
-    FILE* gp_file = StartGnuplot(ParamsTable[4].param_data.dbl, ParamsTable[3].param_data.dbl, ParamsTable[2].param_data.dbl);
+    FILE* gp_file = StartGnuplot(ParamsTable[4].param_data.dbl, ParamsTable[3].param_data.dbl, dot, y0);
     if (gp_file == nullptr) { return dfr_return_t::GP_START_ERROR; }
 
-    WriteGnuplotCMD(gp_file, "plot ");
     ADD_FUNCTION_TO_GNUPLOT;
     WriteGnuplotCMD(gp_file, ", ");
     ADD_DERIVATIVE_TO_GNUPLOT;
     WriteGnuplotCMD(gp_file, ", ");
     ADD_TAILOR_SRS_TO_GNUPLOT;
     WriteGnuplotCMD(gp_file, "\n");
+
+    char buffer[30] = {};
+    snprintf(buffer, 30, "%lg %lg\ne\n", dot, y0);
+    WriteGnuplotCMD(gp_file, buffer);
+
     FinishGnuplot(gp_file);
 
     CreateGnuplotGraph("plot_script.gp");

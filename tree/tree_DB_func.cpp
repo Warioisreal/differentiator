@@ -310,6 +310,7 @@ static Node_t* GetAddition(const char** s) {
         new_node->right = node2;
 
         node = new_node;
+        MakeGreenElem(node);
     }
 
     return node;
@@ -340,6 +341,7 @@ static Node_t* GetMultiplication(const char** s) {
         new_node->right = node2;
 
         node = new_node;
+        MakeGreenElem(node);
     }
 
     return node;
@@ -365,7 +367,7 @@ static Node_t* GetPower(const char** s) {
         new_node->right = node2;
 
         node = new_node;
-        SkipSpaces(s);
+        MakeGreenElem(node);
     }
 
     return node;

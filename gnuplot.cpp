@@ -2,7 +2,7 @@
 
 #include "gnuplot.h"
 
-FILE* StartGnuplot(double height, double width, double dot) {
+FILE* StartGnuplot(double height, double width, double dotX, double dotY) {
     const char* filename = "plot_script.gp";
     FILE* gp_script = fopen(filename, "wb");
 
@@ -16,10 +16,11 @@ FILE* StartGnuplot(double height, double width, double dot) {
     fprintf(gp_script, "set xlabel 'X'\n");
     fprintf(gp_script, "set ylabel 'Y'\n");
     // размер окна по осям
-    fprintf(gp_script, "set yrange [%lg:%lg]\n", -height, height);
-    fprintf(gp_script, "set xrange [%lg:%lg]\n", -width + dot, width + dot);
+    fprintf(gp_script, "set yrange [%lg:%lg]\n", -height + dotY, height + dotY);
+    fprintf(gp_script, "set xrange [%lg:%lg]\n", -width + dotX, width + dotX);
     // добавление сетки
     fprintf(gp_script, "set grid\n");
+    fprintf(gp_script, "plot \'-\' with points pointtype 7 pointsize 1 linecolor rgb \'magenta\' title \'Точка аппроксимации\', ");
 
     return gp_script;
 }

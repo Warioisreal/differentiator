@@ -4,3 +4,4 @@ binary_file
 *.htm
 *.svg
 logs/
+.pdf

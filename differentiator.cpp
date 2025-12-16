@@ -340,10 +340,11 @@ dfr_return_t MakeFuncGraphs(Tree_type* tree, ExtraTrees* calc_array, LATEX* late
     CHECK_FILES_AND_RETURN;
 
     VarTable[var_num].value = dot;
+
     double y0 = SolveRec(tree->root);
     double drv_x0 = SolveRec(ARR[SIZE - accuracy - 1]->root);
 
-    for (double argument = dot - 5; argument < dot + 5; argument += 0.02) {
+    for (double argument = dot - 5; argument < dot + 5; argument += 0.01) {
         VarTable[var_num].value = argument;
 
         WRITE_DATA_TO_FILES;

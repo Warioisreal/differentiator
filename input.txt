@@ -1,1 +1,1 @@
-x = 1 | Dx = 10 dot = 0.5 rngX = 5 rngY = 3 $ sin(15 * x^3 + 4) + cos(10 * x + 5) ^ 3 $
+x = 1 | Dx = 10 dot = 0.5 rngX = 2 rngY = 1.5 $ sin(15 * x^3 + 4) + cos(10 * x + 5) ^ 3 $

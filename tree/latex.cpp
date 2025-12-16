@@ -360,7 +360,7 @@ static void LatexRecursive(Node_t* node, char* buffer, size_t* pos) {
     }
     else if (node->type == node_type::NUMBER) {
         // Форматируем числа для LaTeX
-        *pos += (size_t)snprintf(buffer + *pos, LATEX_EXPRESSION_SIZE - *pos, "%.5lg", node->value.number);
+        *pos += (size_t)snprintf(buffer + *pos, LATEX_EXPRESSION_SIZE - *pos, "%.7lg", node->value.number);
     }
 }
 
